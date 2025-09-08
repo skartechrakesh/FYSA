@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- Scrollable Content -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:divider="@android:color/darker_gray"
+            android:showDividers="middle"
+            android:dividerPadding="8dp">
+
+            <!-- Support Text -->
+            <TextView
+                android:id="@+id/supportText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Need help? Reach out to us anytime."
+                android:textSize="16sp"
+                android:textColor="@color/textPrimary"
+                android:paddingBottom="12dp" />
+
+            <!-- Email Section -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnEmailSupport"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_email"
+                    android:contentDescription="@string/email_support"
+                    android:padding="12dp"
+                    app:tint="@color/textPrimary" />
+
+                <TextView
+                    android:id="@+id/supportEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Email: support@skar.com"
+                    android:textSize="14sp"
+                    android:textColor="@color/footerText"
+                    android:paddingBottom="24dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

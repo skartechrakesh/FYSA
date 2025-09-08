@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "10249477573",
+    "firebase_url": "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "fysa-793f9",
+    "storage_bucket": "fysa-793f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10249477573:android:6c6d2877931969c9997fac",
+        "android_client_info": {
+          "package_name": "com.skar.fysa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "10249477573-rllam701rbmvc4cu6p5gjgmbmat9m7k9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.skar.fysa",
+            "certificate_hash": "9352eaea65cd5b7f9d05ad46a6bb65b80421819e"
+          }
+        },
+        {
+          "client_id": "10249477573-b842mscemqugnn3cem1q32apclisvutj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDASFIvb7LFj0xKyRPUMAshMW-7ry0zQgc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "10249477573-b842mscemqugnn3cem1q32apclisvutj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

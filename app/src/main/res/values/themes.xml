@@ -1,0 +1,33 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.FYSA" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/btnPrimary</item>
+        <item name="colorPrimaryVariant">@color/btnPrimary</item>
+        <item name="colorOnPrimary">@color/btnTextPrimary</item>
+
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/btnSecondary</item>
+        <item name="colorSecondaryVariant">@color/btnSecondary</item>
+        <item name="colorOnSecondary">@color/btnTextSecondary</item>
+
+        <!-- Background and surface -->
+        <item name="android:colorBackground">@color/bgColor</item>
+        <item name="colorSurface">@color/bgColor</item>
+        <item name="colorOnSurface">@color/textPrimary</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimary</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- Use MaterialComponents typography & shapes -->
+        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.MaterialComponents.Button.OutlinedButton</item>
+    </style>
+    
+    <style name="CircleImage">
+        <!-- Profile Image Border -->
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>

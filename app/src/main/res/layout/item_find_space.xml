@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:elevation="4dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:orientation="vertical">
+
+        <!-- Space Name -->
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hostel Sunshine"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/textPrimary"/>
+
+        <!-- Type -->
+        <TextView
+            android:id="@+id/tvType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hostel"
+            android:textSize="14sp"
+            android:textColor="@color/btnSecondary"/>
+
+        <!-- Owner -->
+        <TextView
+            android:id="@+id/tvOwner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Owner: John Doe"
+            android:textSize="13sp"
+            android:textColor="@color/textPrimary"/>
+
+        <!-- Address -->
+        <TextView
+            android:id="@+id/tvAddress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="123 Main Street"
+            android:textSize="13sp"
+            android:textColor="@color/textPrimary"/>
+
+        <!-- Contact -->
+        <TextView
+            android:id="@+id/tvContact"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Contact: +91 9876543210"
+            android:textSize="13sp"
+            android:textColor="@color/textPrimary"/>
+
+        <!-- Vacancy -->
+        <TextView
+            android:id="@+id/tvVacancy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vacancy: Available"
+            android:textSize="13sp"
+            android:textColor="@color/textPrimary"
+            android:background="@color/green_500"/>
+
+        <!-- Distance -->
+        <TextView
+            android:id="@+id/tvDistance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="250m away"
+            android:textSize="13sp"
+            android:textColor="@color/footerText"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

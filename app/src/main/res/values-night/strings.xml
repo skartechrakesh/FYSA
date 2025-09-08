@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_logo">FYSA</string>
+    <string name="theme_toggle">dark</string>
+    <string name="register">register</string>
+    <string name="login">login</string>
+    <string name="app_tagline">Find Your Space Anywhere</string>
+    <string name="toggle_theme">toggle_theme</string>
+    <string name="contact_us">contact_us</string>
+    <string name="logout">Logout</string>
+    <string name="notifications">notifications</string>
+    <string name="find_space">find_space</string>
+    <string name="faqs">faqs</string>
+    <string name="preferences">preferences</string>
+    <string name="view_bookings">view_bookings</string>
+    <string name="back">Back</string>
+    <string name="enter_the_name_of_the_space">Enter the name of the space</string>
+    <string name="edit_space">edit space</string>
+    <string name="list_of_bookings">list of bookings</string>
+    <string name="edit_booking">edit booking</string>
+    <string name="email_support">email_support</string>
+    <string name="find_nearby_spaces">Find Nearby Spaces</string>
+    <string name="refresh">refresh</string>
+    <string name="add_new_space">Add New Space</string>
+    <string name="space_name">Space Name (or) Individual House</string>
+    <string name="submit">Submit</string>
+    <string name="footer_copyright">© 2025 SKAR. All Rights Reserved</string>
+    <string name="footer_contact">Contact: support@skar.com</string>
+    <string name="navigation_drawer_open">Drawer Open</string>
+    <string name="navigation_drawer_close">Drawer Close</string>
+    <string name="create_account">Create Your Account</string>
+    <string name="user">User</string>
+    <string name="owner">Owner</string>
+    <string name="full_name">Full Name</string>
+    <string name="username">Username</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="default_web_client_id">295524495807-dtch9f2uequgkdokgkgpbplgob3s64f5.apps.googleusercontent.com</string>
+</resources>
