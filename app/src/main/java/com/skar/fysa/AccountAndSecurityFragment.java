@@ -23,6 +23,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -54,6 +58,8 @@ public class AccountAndSecurityFragment extends Fragment {
 
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
+    private InterstitialAd mInterstitialAd;
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -98,10 +104,45 @@ public class AccountAndSecurityFragment extends Fragment {
         loadUserData();
         updateVerificationUI();
 
+        // Load interstitial ad
+        loadInterstitialAd();
+
         btnEditPassword.setOnClickListener(v -> showPasswordChangeDialog());
-        btnSave.setOnClickListener(v -> saveUserData());
+        btnSave.setOnClickListener(v -> {
+            showInterstitialAd();
+            // Delay showing the interstitial slightly so Toast can be seen
+            new android.os.Handler().postDelayed(this::showInterstitialAd, 1000);
+            saveUserData();
+        });
         btnVerifyEmail.setOnClickListener(v -> sendVerificationEmail());
         btnDeleteAccount.setOnClickListener(v -> handleDeleteAccount());
+    }
+
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(requireContext(),
+                "ca-app-pub-3940256099942544/1033173712", // test id, replace with real one
+                adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        mInterstitialAd = null;
+                    }
+                });
+    }
+
+    private void showInterstitialAd() {
+        if (mInterstitialAd != null) {
+            mInterstitialAd.show(requireActivity());
+            mInterstitialAd = null;
+            // Preload next ad
+            loadInterstitialAd();
+        }
     }
 
     private void loadUserData() {
@@ -194,7 +235,6 @@ public class AccountAndSecurityFragment extends Fragment {
                 .setPositiveButton("Delete", (dialog, which) -> {
                     if (currentUser == null) return;
 
-                    // Check if the user is signed in with a Google provider
                     boolean isGoogleUser = false;
                     for (com.google.firebase.auth.UserInfo profile : currentUser.getProviderData()) {
                         if (profile.getProviderId().equals(GoogleAuthProvider.PROVIDER_ID)) {
@@ -204,15 +244,8 @@ public class AccountAndSecurityFragment extends Fragment {
                     }
 
                     if (isGoogleUser) {
-                        // For Google users, you need to re-authenticate with Google.
-                        // This is more complex and typically handled via the Firebase Auth UI or a dedicated sign-in flow.
-                        // For simplicity in this context, we will skip re-authentication for Google users,
-                        // as they've already been authenticated by Google. This is less secure but bypasses the issue.
-                        // A better approach would be to prompt them to re-sign in via Google and then call deleteAllUserData().
-                        // For now, we will assume their Google session is fresh enough.
                         deleteAllUserData();
                     } else {
-                        // For email/password users, prompt for password.
                         AlertDialog.Builder reauthBuilder = new AlertDialog.Builder(requireContext());
                         reauthBuilder.setTitle("Re-authenticate");
                         reauthBuilder.setMessage("Please enter your current password to confirm deletion.");
@@ -241,20 +274,14 @@ public class AccountAndSecurityFragment extends Fragment {
         String currentUserId = currentUser.getUid();
         List<DatabaseReference> referencesToDelete = new ArrayList<>();
 
-        // 1. users node
         referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("users").child(currentUserId));
-
-        // 2. user_secure node
         referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("user_secure").child(currentUserId));
 
-        // 3. usernames node
         if (username != null && !username.isEmpty()) {
             referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("usernames").child(username));
         }
 
-        // 4. spaces and notifications nodes
         if ("Owner".equalsIgnoreCase(accountType)) {
-            // Delete spaces created by this owner
             DatabaseReference spacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
             spacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
@@ -267,11 +294,7 @@ public class AccountAndSecurityFragment extends Fragment {
                             }
                         }
                     }
-
-                    // Delete owner's notifications
                     referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("notifications").child(currentUserId));
-
-                    // Execute all deletions
                     executeDeletions(referencesToDelete);
                 }
 
@@ -281,9 +304,6 @@ public class AccountAndSecurityFragment extends Fragment {
                 }
             });
         } else {
-            // For a regular user, only delete related notifications.
-            // This is complex as notifications are nested under the owner ID.
-            // We need to query all notifications to find the ones created by the current user.
             DatabaseReference allNotificationsRef = FirebaseDatabase.getInstance(DB_URL).getReference("notifications");
             allNotificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
@@ -315,11 +335,9 @@ public class AccountAndSecurityFragment extends Fragment {
 
         Tasks.whenAll(tasks)
                 .addOnSuccessListener(aVoid -> {
-                    // Finally, delete the Firebase Auth user
                     currentUser.delete()
                             .addOnSuccessListener(aVoid1 -> {
                                 Toast.makeText(requireContext(), "Account and all data deleted successfully.", Toast.LENGTH_LONG).show();
-                                // Redirect to the main activity or login screen
                                 Intent intent = new Intent(requireActivity(), LoginActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                                 startActivity(intent);

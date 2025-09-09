@@ -13,7 +13,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.activity.OnBackPressedCallback;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -61,20 +60,6 @@ public class SpaceDetailsFragment extends Fragment {
         tvDistance = view.findViewById(R.id.tvDistance);
         btnDirections = view.findViewById(R.id.btnDirections);
         btnBook = view.findViewById(R.id.btnBook);
-
-        // Back press handling
-        requireActivity().getOnBackPressedDispatcher().addCallback(
-                getViewLifecycleOwner(),
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        if (getParentFragmentManager().getBackStackEntryCount() > 0) {
-                            getParentFragmentManager().popBackStack();
-                        } else {
-                            requireActivity().onBackPressed();
-                        }
-                    }
-                });
 
         if (getArguments() != null) {
             space = (Space) getArguments().getSerializable("space");
@@ -132,11 +117,11 @@ public class SpaceDetailsFragment extends Fragment {
 
             final String userId = auth.getCurrentUser().getUid();
 
-            // Check if a booking for this space by this user already exists
             DatabaseReference ownerNotificationsRef = FirebaseDatabase.getInstance(DB_URL)
                     .getReference("notifications")
                     .child(ownerId);
 
+            // Check if this user already booked this space
             ownerNotificationsRef.orderByChild("userId").equalTo(userId)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -144,67 +129,74 @@ public class SpaceDetailsFragment extends Fragment {
                             boolean alreadyBooked = false;
                             for (DataSnapshot notificationSnap : snapshot.getChildren()) {
                                 NotificationModel notification = notificationSnap.getValue(NotificationModel.class);
-                                if (notification != null && notification.getSpaceId().equals(spaceId)) {
+                                if (notification != null && spaceId.equals(notification.getSpaceId())) {
                                     alreadyBooked = true;
                                     break;
                                 }
                             }
 
                             if (alreadyBooked) {
-                                Toast.makeText(requireContext(), "You have already booked this space.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(requireContext(),
+                                        "You have already booked this space.", Toast.LENGTH_SHORT).show();
                             } else {
-                                // If not booked, proceed with creating a new booking notification
-                                final String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                                final long createdAt = System.currentTimeMillis();
-
-                                DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
-                                        .getReference("users")
-                                        .child(userId)
-                                        .child("username");
-
-                                userRef.get().addOnSuccessListener(userSnapshot -> {
-                                    final String usernameFromDb = userSnapshot.exists() ? userSnapshot.getValue(String.class) : "User";
-
-                                    DatabaseReference notifRef = FirebaseDatabase.getInstance(DB_URL)
-                                            .getReference("notifications")
-                                            .child(ownerId)
-                                            .push();
-
-                                    String bookingStatus = "Booked Visit";
-
-                                    NotificationModel notification = new NotificationModel(
-                                            userId,
-                                            usernameFromDb,
-                                            spaceId,
-                                            spaceName,
-                                            date,
-                                            false,
-                                            createdAt,
-                                            bookingStatus
-                                    );
-                                    notification.setSpaceType(spaceType);
-
-                                    notifRef.setValue(notification)
-                                            .addOnCompleteListener(task -> {
-                                                if (task.isSuccessful()) {
-                                                    Toast.makeText(requireContext(), "Visit booked successfully!", Toast.LENGTH_SHORT).show();
-                                                } else {
-                                                    Toast.makeText(requireContext(),
-                                                            "Booking failed: " + task.getException().getMessage(),
-                                                            Toast.LENGTH_LONG).show();
-                                                }
-                                            });
-
-                                }).addOnFailureListener(e -> Toast.makeText(requireContext(),
-                                        "Failed to fetch username: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                createNewBooking(userId);
                             }
                         }
 
                         @Override
                         public void onCancelled(@NonNull DatabaseError error) {
-                            Toast.makeText(requireContext(), "Failed to check for existing bookings: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                            Toast.makeText(requireContext(),
+                                    "Failed to check bookings: " + error.getMessage(),
+                                    Toast.LENGTH_LONG).show();
                         }
                     });
         });
+    }
+
+    private void createNewBooking(String userId) {
+        final String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
+        final long createdAt = System.currentTimeMillis();
+
+        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
+                .getReference("users")
+                .child(userId)
+                .child("username");
+
+        userRef.get().addOnSuccessListener(userSnapshot -> {
+            final String usernameFromDb = userSnapshot.exists()
+                    ? userSnapshot.getValue(String.class)
+                    : "User";
+
+            DatabaseReference notifRef = FirebaseDatabase.getInstance(DB_URL)
+                    .getReference("notifications")
+                    .child(ownerId)
+                    .push();
+
+            NotificationModel notification = new NotificationModel(
+                    userId,
+                    usernameFromDb,
+                    spaceId,
+                    spaceName,
+                    date,
+                    false,
+                    createdAt,
+                    "Booked Visit"
+            );
+            notification.setSpaceType(spaceType);
+
+            notifRef.setValue(notification)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(requireContext(),
+                                    "Visit booked successfully!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Booking failed: " + task.getException().getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+
+        }).addOnFailureListener(e -> Toast.makeText(requireContext(),
+                "Failed to fetch username: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }

@@ -84,44 +84,25 @@ public class UserDashboardActivity extends AppCompatActivity {
 
     private void setupDrawerActions() {
         navigationView.setNavigationItemSelectedListener(item -> {
-            Fragment fragment = null;
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_find_space) {
-                fragment = new FindYourSpaceFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
 
             } else if (itemId == R.id.nav_my_bookings) {
-                fragment = new MyBookingsFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_my_bookings);
 
+            } else if (itemId == R.id.nav_settings) {
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
+
             } else if (itemId == R.id.nav_contact_us) {
-                fragment = new ContactUsFragment();
-                openFragment(fragment);
-                drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
+                openFragment(new ContactUsFragment());
 
             } else if (itemId == R.id.nav_faq) {
-                fragment = new FaqFragment();
-                openFragment(fragment);
-                drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
-
-            } else if (itemId == R.id.nav_settings) {
-                fragment = new SettingsFragment();
-                openFragment(fragment);
-                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
-                drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
+                openFragment(new FaqFragment());
 
             } else if (itemId == R.id.nav_logout) {
                 showLogoutSnackbar();
-                return true;
-            }
-
-            if (fragment != null && itemId != R.id.nav_contact_us
-                    && itemId != R.id.nav_faq && itemId != R.id.nav_settings) {
-                replaceFragment(fragment);
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -144,7 +125,7 @@ public class UserDashboardActivity extends AppCompatActivity {
             }
 
             if (fragment != null) {
-                replaceFragment(fragment); // no back stack
+                replaceRootFragment(fragment);
                 return true;
             }
 
@@ -160,12 +141,19 @@ public class UserDashboardActivity extends AppCompatActivity {
         }
     }
 
-    private void replaceFragment(Fragment fragment) {
+    /**
+     * For bottom navigation fragments (root, no back stack)
+     */
+    private void replaceRootFragment(Fragment fragment) {
+        getSupportFragmentManager().popBackStack(); // clear any child fragments
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragmentContainer, fragment);
         transaction.commit();
     }
 
+    /**
+     * For drawer-only fragments (with back stack)
+     */
     private void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragmentContainer, fragment);

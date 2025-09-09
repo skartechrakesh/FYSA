@@ -5,9 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -30,63 +28,45 @@ public class SettingsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Handle back press: child fragments first, then default fragment
-        requireActivity().getOnBackPressedDispatcher().addCallback(
-                getViewLifecycleOwner(),
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        if (requireActivity().getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                            requireActivity().getSupportFragmentManager().popBackStack();
-                        } else {
-                            if (requireActivity() instanceof UserDashboardActivity) {
-                                ((UserDashboardActivity) requireActivity()).navigateToDefaultFragment();
-                            } else if (requireActivity() instanceof OwnerDashboardActivity) {
-                                ((OwnerDashboardActivity) requireActivity()).navigateToDefaultFragment();
-                            }
-                        }
-                    }
-                });
-
         // Menu item click listeners
         view.findViewById(R.id.itemAccountSecurity).setOnClickListener(v -> {
-            AccountAndSecurityFragment accountAndSecurityFragment = new AccountAndSecurityFragment();
+            AccountAndSecurityFragment fragment = new AccountAndSecurityFragment();
             Bundle args = new Bundle();
             args.putString("source", "settings");
-            accountAndSecurityFragment.setArguments(args);
-            openFragment(accountAndSecurityFragment);
+            fragment.setArguments(args);
+            openFragment(fragment);
         });
 
         view.findViewById(R.id.itemPrivacyPolicy).setOnClickListener(v -> {
-            PrivacyPolicyFragment privacyPolicyFragment = new PrivacyPolicyFragment();
+            PrivacyPolicyFragment fragment = new PrivacyPolicyFragment();
             Bundle args = new Bundle();
             args.putString("source", "settings");
-            privacyPolicyFragment.setArguments(args);
-            openFragment(privacyPolicyFragment);
+            fragment.setArguments(args);
+            openFragment(fragment);
         });
 
         view.findViewById(R.id.itemHelp).setOnClickListener(v -> {
-            SupportFragment supportFragment = new SupportFragment();
+            SupportFragment fragment = new SupportFragment();
             Bundle args = new Bundle();
             args.putString("source", "settings");
-            supportFragment.setArguments(args);
-            openFragment(supportFragment);
+            fragment.setArguments(args);
+            openFragment(fragment);
         });
 
         view.findViewById(R.id.itemFaq).setOnClickListener(v -> {
-            FaqFragment faqFragment = new FaqFragment();
+            FaqFragment fragment = new FaqFragment();
             Bundle args = new Bundle();
             args.putString("source", "settings");
-            faqFragment.setArguments(args);
-            openFragment(faqFragment);
+            fragment.setArguments(args);
+            openFragment(fragment);
         });
 
         view.findViewById(R.id.itemAbout).setOnClickListener(v -> {
-            AboutAppFragment aboutAppFragment = new AboutAppFragment();
+            AboutAppFragment fragment = new AboutAppFragment();
             Bundle args = new Bundle();
             args.putString("source", "settings");
-            aboutAppFragment.setArguments(args);
-            openFragment(new AboutAppFragment());
+            fragment.setArguments(args);
+            openFragment(fragment);
         });
 
         view.findViewById(R.id.itemLogout).setOnClickListener(v -> logout());
@@ -96,7 +76,7 @@ public class SettingsFragment extends Fragment {
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragmentContainer, fragment)
-                .addToBackStack(null) // ensures back navigates back to Settings
+                .addToBackStack(null) // keeps Settings in back stack
                 .commit();
     }
 

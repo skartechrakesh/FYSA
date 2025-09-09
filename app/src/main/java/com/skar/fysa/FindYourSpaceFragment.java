@@ -11,7 +11,6 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
@@ -46,9 +45,6 @@ public class FindYourSpaceFragment extends Fragment {
 
     private final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
-    private long backPressedTime = 0;
-    private static final int BACK_PRESS_INTERVAL = 2000; // 2 seconds
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -91,27 +87,6 @@ public class FindYourSpaceFragment extends Fragment {
         cbFlat.setOnClickListener(filterListener);
 
         checkLocationAndLoad();
-
-        // Handle back press (double exit)
-        requireActivity().getOnBackPressedDispatcher().addCallback(
-                getViewLifecycleOwner(),
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        if (getParentFragmentManager().getBackStackEntryCount() > 0) {
-                            getParentFragmentManager().popBackStack();
-                        } else {
-                            long currentTime = System.currentTimeMillis();
-                            if (currentTime - backPressedTime < BACK_PRESS_INTERVAL) {
-                                requireActivity().finish();
-                            } else {
-                                backPressedTime = currentTime;
-                                Toast.makeText(requireContext(),
-                                        "Press back again to exit", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                });
 
         return view;
     }
