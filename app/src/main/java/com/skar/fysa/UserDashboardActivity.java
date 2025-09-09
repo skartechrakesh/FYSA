@@ -14,6 +14,9 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
@@ -28,12 +31,14 @@ public class UserDashboardActivity extends AppCompatActivity {
     private static final String KEY_USERNAME = "username";
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
     private TextView tvWelcome, drawerUserName;
     private long backPressedTime = 0;
+    private AdView adView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +51,7 @@ public class UserDashboardActivity extends AppCompatActivity {
         setupTopBar();
         setupDrawerActions();
         setupBottomNavigation();
+        setupAds();
         loadUsernameFromDatabase();
         setupBackPressHandler();
 
@@ -63,6 +69,7 @@ public class UserDashboardActivity extends AppCompatActivity {
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         tvWelcome = findViewById(R.id.tvWelcome);
         drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvUserName);
+        adView = findViewById(R.id.adView);
     }
 
     private void setupTopBar() {
@@ -83,7 +90,6 @@ public class UserDashboardActivity extends AppCompatActivity {
             if (itemId == R.id.nav_find_space) {
                 fragment = new FindYourSpaceFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
-
 
             } else if (itemId == R.id.nav_my_bookings) {
                 fragment = new MyBookingsFragment();
@@ -129,7 +135,6 @@ public class UserDashboardActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment fragment = null;
 
-
             if (item.getItemId() == R.id.nav_find_space) {
                 fragment = new FindYourSpaceFragment();
             } else if (item.getItemId() == R.id.nav_my_bookings) {
@@ -145,6 +150,14 @@ public class UserDashboardActivity extends AppCompatActivity {
 
             return false;
         });
+    }
+
+    private void setupAds() {
+        MobileAds.initialize(this, initializationStatus -> {});
+        if (adView != null) {
+            AdRequest adRequest = new AdRequest.Builder().build();
+            adView.loadAd(adRequest);
+        }
     }
 
     private void replaceFragment(Fragment fragment) {
