@@ -1,13 +1,14 @@
 package com.skar.fysa;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -15,6 +16,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -22,33 +24,29 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class OwnerDashboardActivity extends AppCompatActivity {
 
+    private static final String KEY_USERNAME = "username";
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
     private TextView tvWelcome, drawerUserName;
-
     private long backPressedTime = 0;
-    private Toast backToast;
-
-    private static final String KEY_USERNAME = "username";
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        FysaApp.applySavedTheme(); // ✅ Apply saved theme
+        FysaApp.applySavedTheme();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_owner_dashboard);
         FysaApp.setStatusBarColor(this);
 
         initViews();
-        setupTopBar();          // ✅ includes theme toggle
+        setupTopBar();
         setupDrawerActions();
         setupBottomNavigation();
         loadUsernameFromDatabase();
         setupBackPressHandler();
-        handleNotificationIntent(getIntent());
 
         if (savedInstanceState == null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
@@ -68,15 +66,12 @@ public class OwnerDashboardActivity extends AppCompatActivity {
 
     private void setupTopBar() {
         btnHamburger.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
-        btnLogout.setOnClickListener(v -> logout());
+        btnLogout.setOnClickListener(v -> showLogoutSnackbar());
 
-        if (btnThemeToggle != null) {
-            // ✅ Update icon based on current theme
-            FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-            btnThemeToggle.setOnClickListener(v ->
-                    FysaApp.toggleThemeWithAnimation(OwnerDashboardActivity.this, btnThemeToggle)
-            );
-        }
+        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
+        btnThemeToggle.setOnClickListener(v ->
+                FysaApp.toggleThemeWithAnimation(OwnerDashboardActivity.this, btnThemeToggle)
+        );
     }
 
     private void setupDrawerActions() {
@@ -98,39 +93,31 @@ public class OwnerDashboardActivity extends AppCompatActivity {
 
             } else if (itemId == R.id.nav_contact_us) {
                 fragment = new ContactUsFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .addToBackStack(null)
-                        .commit();
+                openFragment(fragment);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
 
             } else if (itemId == R.id.nav_faq) {
                 fragment = new FaqFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .addToBackStack(null)
-                        .commit();
+                openFragment(fragment);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
 
             } else if (itemId == R.id.nav_settings) {
                 fragment = new SettingsFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .addToBackStack(null)
-                        .commit();
-                bottomNavigationView.setSelectedItemId(R.id.nav_preferences); // ✅ Update bottom nav when opened from drawer
+                openFragment(fragment);
+                bottomNavigationView.setSelectedItemId(R.id.nav_preferences);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
 
             } else if (itemId == R.id.nav_logout) {
-                logout();
+                showLogoutSnackbar();
                 return true;
             }
 
-            if (fragment != null && itemId != R.id.nav_contact_us && itemId != R.id.nav_faq && itemId != R.id.nav_settings) {
-                replaceFragment(fragment, false);
+            if (fragment != null && itemId != R.id.nav_contact_us
+                    && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
+                replaceFragment(fragment);
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -153,21 +140,37 @@ public class OwnerDashboardActivity extends AppCompatActivity {
             }
 
             if (fragment != null) {
-                replaceFragment(fragment, false);
+                replaceFragment(fragment);
                 return true;
             }
             return false;
         });
     }
 
-    private void replaceFragment(Fragment fragment, boolean addToBackStack) {
+    private void replaceFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragmentContainer, fragment);
-        if (addToBackStack) transaction.addToBackStack(null);
         transaction.commit();
     }
 
-    private void logout() {
+    private void openFragment(Fragment fragment) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragmentContainer, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+    }
+
+    private void showLogoutSnackbar() {
+        Snackbar snackbar = Snackbar.make(drawerLayout, "Are you sure you want to logout?", Snackbar.LENGTH_LONG)
+                .setAnchorView(bottomNavigationView)
+                .setAction("Logout", v -> performLogout());
+        snackbar.setBackgroundTint(ContextCompat.getColor(this, R.color.red_800));
+        snackbar.setTextColor(ContextCompat.getColor(this, R.color.white));
+        snackbar.setActionTextColor(ContextCompat.getColor(this, R.color.white));
+        snackbar.show();
+    }
+
+    private void performLogout() {
         FirebaseAuth.getInstance().signOut();
         if (FysaApp.getAppContext() != null) {
             FysaApp.getAppContext().getSharedPreferences("theme_prefs", MODE_PRIVATE)
@@ -177,6 +180,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         finish();
     }
 
+    @SuppressLint("SetTextI18n")
     private void loadUsernameFromDatabase() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -226,45 +230,31 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                             return;
                         }
 
-                        int currentItemId = bottomNavigationView.getSelectedItemId();
-                        if (currentItemId != R.id.nav_add_new_space) {
+                        if (bottomNavigationView.getSelectedItemId() != R.id.nav_add_new_space) {
                             bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
                             return;
                         }
 
                         if (backPressedTime + 2000 > System.currentTimeMillis()) {
-                            if (backToast != null) backToast.cancel();
                             finish();
                         } else {
-                            backToast = Toast.makeText(OwnerDashboardActivity.this, "Press back again to exit", Toast.LENGTH_SHORT);
-                            backToast.show();
+                            Snackbar snackbar = Snackbar.make(drawerLayout, "Press back again to exit", Snackbar.LENGTH_SHORT)
+                                    .setAnchorView(bottomNavigationView);
+                            snackbar.setBackgroundTint(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.blue_400));
+                            snackbar.setTextColor(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.black));
+                            snackbar.show();
                         }
                         backPressedTime = System.currentTimeMillis();
                     }
                 });
     }
 
-    private void handleNotificationIntent(Intent intent) {
-        if (intent != null && intent.hasExtra("openFragment")) {
-            String fragmentToOpen = intent.getStringExtra("openFragment");
-            if ("bookings_overview".equals(fragmentToOpen)) {
-                bottomNavigationView.setSelectedItemId(R.id.nav_bookings);
-            }
-        }
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleNotificationIntent(intent);
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        FysaApp.applySavedTheme(); // ✅ Ensure theme is applied on resume
+        FysaApp.applySavedTheme();
         FysaApp.setStatusBarColor(this);
-        FysaApp.updateThemeIcon(this, btnThemeToggle, false); // ✅ Keep icon synced
+        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
     }
 
     public void navigateToDefaultFragment() {

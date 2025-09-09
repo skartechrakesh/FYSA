@@ -2,9 +2,9 @@ package com.skar.fysa;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -32,7 +32,6 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        // Force splash status bar to black with light icons
         setStatusBarBlack();
 
         mAuth = FirebaseAuth.getInstance();
@@ -40,25 +39,24 @@ public class SplashActivity extends AppCompatActivity {
                 .getInstance("https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("users");
 
-        // Small delay to show splash
-        new Handler().postDelayed(this::checkSessionAndRedirect, SPLASH_DELAY);
+        // Delay for splash branding, then redirect
+        new Handler(Looper.getMainLooper()).postDelayed(this::checkSessionAndRedirect, SPLASH_DELAY);
     }
 
-    /** ---------- STATUS BAR ---------- **/
+    /**
+     * ---------- STATUS BAR ----------
+     **/
     private void setStatusBarBlack() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            View decor = getWindow().getDecorView();
-            // Ensure light icons (remove "light status bar" flag)
-            decor.setSystemUiVisibility(
-                    decor.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            );
-        }
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
+        View decor = getWindow().getDecorView();
+        decor.setSystemUiVisibility(
+                decor.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        );
     }
 
-    /** ---------- SESSION & REDIRECT ---------- **/
+    /**
+     * ---------- SESSION & REDIRECT ----------
+     **/
     private void checkSessionAndRedirect() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
@@ -94,7 +92,9 @@ public class SplashActivity extends AppCompatActivity {
                 });
     }
 
-    /** ---------- HELPERS ---------- **/
+    /**
+     * ---------- HELPERS ----------
+     **/
     private void goToMainActivity() {
         launchAndFinish(new Intent(SplashActivity.this, MainActivity.class));
     }

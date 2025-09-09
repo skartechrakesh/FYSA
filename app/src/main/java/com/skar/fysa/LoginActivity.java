@@ -1,22 +1,19 @@
 package com.skar.fysa;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -26,28 +23,24 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButtonToggleGroup;
-import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.OAuthProvider;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Random;
-
 public class LoginActivity extends AppCompatActivity {
 
     private ImageButton btnThemeToggle;
     private Button btnLoginSubmit;
-    private TextView linkRegister;
-    private TextView linkForgotPassword;
+    private TextView linkRegister, linkForgotPassword;
     private ProgressBar progressBar;
     private TextInputLayout emailLayout, passwordLayout;
     private SignInButton btnGoogleSignIn;
@@ -55,25 +48,25 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private DatabaseReference usersRef;
     private GoogleSignInClient googleSignInClient;
-    private final String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
+    private final String FIREBASE_DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     private final ActivityResultLauncher<Intent> googleSignInLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     result -> {
-                        if (result.getResultCode() == Activity.RESULT_OK) {
+                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                             try {
                                 GoogleSignInAccount account = task.getResult(ApiException.class);
-                                if (account != null) {
-                                    firebaseAuthWithGoogle(account.getIdToken());
-                                }
+                                if (account != null) firebaseAuthWithGoogle(account.getIdToken());
                             } catch (ApiException e) {
                                 setLoading(false);
-                                Toast.makeText(this, "Google Sign-In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                showSnackbar("Google Sign-In failed: " + e.getMessage());
                             }
                         } else {
                             setLoading(false);
-                            Toast.makeText(this, "Google Sign-In cancelled.", Toast.LENGTH_SHORT).show();
+                            showSnackbar("Google Sign-In cancelled.");
                         }
                     });
 
@@ -103,18 +96,11 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInClient = GoogleSignIn.getClient(this, gso);
 
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-        btnThemeToggle.setOnClickListener(v ->
-                FysaApp.toggleThemeWithAnimation(this, btnThemeToggle)
-        );
+        btnThemeToggle.setOnClickListener(v -> FysaApp.toggleThemeWithAnimation(this, btnThemeToggle));
 
         btnLoginSubmit.setOnClickListener(v -> performLogin());
-
-        linkRegister.setOnClickListener(v ->
-                startActivity(new Intent(LoginActivity.this, RegisterActivity.class))
-        );
-
+        linkRegister.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
         linkForgotPassword.setOnClickListener(v -> sendPasswordResetEmail());
-
         btnGoogleSignIn.setOnClickListener(v -> signInWithGoogle());
 
         FysaApp.setupTextInputStrokes(this, emailLayout, passwordLayout);
@@ -160,51 +146,69 @@ public class LoginActivity extends AppCompatActivity {
                         redirectToDashboard(auth.getCurrentUser().getUid());
                     } else {
                         setLoading(false);
-                        Toast.makeText(this,
-                                "Login failed: " + (task.getException() != null ? task.getException().getMessage() : ""),
-                                Toast.LENGTH_LONG).show();
+                        showSnackbar("Login failed: " +
+                                (task.getException() != null ? task.getException().getMessage() : ""));
                     }
                 });
     }
 
     private void signInWithGoogle() {
-        setLoading(true);
-        Intent signInIntent = googleSignInClient.getSignInIntent();
-        googleSignInLauncher.launch(signInIntent);
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+            // Dark mode → external browser sign-in
+            signInWithGoogleExternal();
+        } else {
+            // Light mode → default Google sign-in intent
+            setLoading(true);
+            googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
+        }
     }
+
+    private void signInWithGoogleExternal() {
+        setLoading(true);
+
+        OAuthProvider.Builder provider = OAuthProvider.newBuilder("google.com");
+        auth.startActivityForSignInWithProvider(this, provider.build())
+                .addOnSuccessListener(authResult -> {
+                    FirebaseUser user = authResult.getUser();
+                    if (user != null) {
+                        redirectToDashboard(user.getUid());
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    setLoading(false);
+                    showSnackbar("Google sign-in failed: " + e.getMessage());
+                });
+    }
+
+
 
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         auth.signInWithCredential(credential)
                 .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
+                    if (task.isSuccessful() && auth.getCurrentUser() != null) {
                         FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            usersRef.child(user.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                    if (snapshot.exists()) {
-                                        // User data exists, log them in
-                                        redirectToDashboard(user.getUid());
-                                    } else {
-                                        // User data does NOT exist, they need to register
-                                        setLoading(false);
-                                        auth.signOut();
-                                        Toast.makeText(LoginActivity.this,
-                                                "Please register first with this account.",
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                }
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError error) {
+                        usersRef.child(user.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                if (snapshot.exists()) {
+                                    redirectToDashboard(user.getUid());
+                                } else {
                                     setLoading(false);
-                                    Toast.makeText(LoginActivity.this, "Database Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                                    auth.signOut();
+                                    showSnackbar("Please register first with this account.");
                                 }
-                            });
-                        }
+                            }
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                setLoading(false);
+                                showSnackbar("Database Error: " + error.getMessage());
+                            }
+                        });
                     } else {
                         setLoading(false);
-                        Toast.makeText(this, "Firebase Authentication failed: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_LONG).show();
+                        showSnackbar("Firebase Authentication failed: " +
+                                (task.getException() != null ? task.getException().getMessage() : ""));
                     }
                 });
     }
@@ -224,9 +228,10 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     setLoading(false);
                     if (task.isSuccessful()) {
-                        Toast.makeText(this, "Password reset email sent to " + email, Toast.LENGTH_LONG).show();
+                        showSnackbar("Password reset email sent to " + email);
                     } else {
-                        Toast.makeText(this, "Failed to send reset email: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_LONG).show();
+                        showSnackbar("Failed to send reset email: " +
+                                (task.getException() != null ? task.getException().getMessage() : ""));
                     }
                 });
     }
@@ -239,13 +244,9 @@ public class LoginActivity extends AppCompatActivity {
                 setLoading(false);
                 if (snapshot.exists()) {
                     String accountType = snapshot.child("accountType").getValue(String.class);
-
-                    Intent intent;
-                    if ("owner".equalsIgnoreCase(accountType)) {
-                        intent = new Intent(LoginActivity.this, OwnerDashboardActivity.class);
-                    } else {
-                        intent = new Intent(LoginActivity.this, UserDashboardActivity.class);
-                    }
+                    Intent intent = "owner".equalsIgnoreCase(accountType)
+                            ? new Intent(LoginActivity.this, OwnerDashboardActivity.class)
+                            : new Intent(LoginActivity.this, UserDashboardActivity.class);
 
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
                             Intent.FLAG_ACTIVITY_NEW_TASK |
@@ -253,18 +254,13 @@ public class LoginActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 } else {
-                    Toast.makeText(LoginActivity.this,
-                            "User not found in database.",
-                            Toast.LENGTH_SHORT).show();
+                    showSnackbar("User not found in database.");
                 }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this,
-                        "Database error: " + error.getMessage(),
-                        Toast.LENGTH_LONG).show();
+                showSnackbar("Database error: " + error.getMessage());
             }
         });
     }
@@ -272,5 +268,9 @@ public class LoginActivity extends AppCompatActivity {
     private void setLoading(boolean loading) {
         progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
         btnLoginSubmit.setEnabled(!loading);
+    }
+
+    private void showSnackbar(String message) {
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
     }
 }

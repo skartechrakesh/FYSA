@@ -5,12 +5,12 @@
     <string name="register">register</string>
     <string name="login">login</string>
     <string name="app_tagline">Find Your Space Anywhere</string>
-    <string name="toggle_theme">toggle_theme</string>
-    <string name="contact_us">contact_us</string>
+    <string name="toggle_theme">Theme Toggle Icon</string>
+    <string name="contact_us">Contact Us</string>
     <string name="logout">Logout</string>
     <string name="notifications">notifications</string>
-    <string name="find_space">find_space</string>
-    <string name="faqs">faqs</string>
+    <string name="find_space">Find Space</string>
+    <string name="faqs">FAQ\'s</string>
     <string name="preferences">preferences</string>
     <string name="view_bookings">view_bookings</string>
     <string name="back">Back</string>
@@ -41,4 +41,16 @@
     <string name="confirm_password">Confirm Password</string>
     <string name="already_have_account">Already have an account? Login</string>
     <string name="default_web_client_id">295524495807-dtch9f2uequgkdokgkgpbplgob3s64f5.apps.googleusercontent.com</string>
+    <string name="contact_rakesh_skar_tech_gmail_com">Contact: rakesh.skar.tech@gmail.com</string>
+    <string name="menu">Menu</string>
+    <string name="fysa_owner_dashboard">FYSA Owner Dashboard</string>
+    <string name="fysa_user_dashboard">FYSA User Dashboard</string>
+    <string name="manage_spaces">Manage Spaces</string>
+    <string name="bookings_dashboard">Bookings Dashboard</string>
+    <string name="settings">Settings</string>
+    <string name="find_your_space">Find Your Space</string>
+    <string name="my_bookings">My Bookings</string>
+    <string name="or">OR</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="don_t_have_an_account_register">Don\'t have an account? Register</string>
 </resources>

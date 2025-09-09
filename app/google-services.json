@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "10249477573-v1cjrjqnf65q7d5r7vcgu2943qgjcghe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.skar.fysa",
+            "certificate_hash": "40b7a45647727d0daf63abddcdb847708a91015d"
+          }
+        },
+        {
           "client_id": "10249477573-b842mscemqugnn3cem1q32apclisvutj.apps.googleusercontent.com",
           "client_type": 3
         }

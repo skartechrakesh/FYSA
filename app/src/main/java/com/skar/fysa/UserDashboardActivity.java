@@ -1,20 +1,23 @@
 package com.skar.fysa;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
@@ -22,23 +25,21 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class UserDashboardActivity extends AppCompatActivity {
 
+    private static final String KEY_USERNAME = "username";
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
     private TextView tvWelcome, drawerUserName;
-
     private long backPressedTime = 0;
-    private Toast backToast;
-
-    private static final String KEY_USERNAME = "username";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         FysaApp.applySavedTheme();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_dashboard);
-
         FysaApp.setStatusBarColor(this);
 
         initViews();
@@ -47,7 +48,6 @@ public class UserDashboardActivity extends AppCompatActivity {
         setupBottomNavigation();
         loadUsernameFromDatabase();
         setupBackPressHandler();
-        handleNotificationIntent(getIntent());
 
         if (savedInstanceState == null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
@@ -67,14 +67,12 @@ public class UserDashboardActivity extends AppCompatActivity {
 
     private void setupTopBar() {
         btnHamburger.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
-        btnLogout.setOnClickListener(v -> logout());
+        btnLogout.setOnClickListener(v -> showLogoutSnackbar());
 
-        if (btnThemeToggle != null) {
-            FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-            btnThemeToggle.setOnClickListener(v ->
-                    FysaApp.toggleThemeWithAnimation(UserDashboardActivity.this, btnThemeToggle)
-            );
-        }
+        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
+        btnThemeToggle.setOnClickListener(v ->
+                FysaApp.toggleThemeWithAnimation(UserDashboardActivity.this, btnThemeToggle)
+        );
     }
 
     private void setupDrawerActions() {
@@ -86,39 +84,37 @@ public class UserDashboardActivity extends AppCompatActivity {
                 fragment = new FindYourSpaceFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
 
+
             } else if (itemId == R.id.nav_my_bookings) {
                 fragment = new MyBookingsFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_my_bookings);
 
-            } else if (itemId == R.id.nav_settings) {
-                fragment = new SettingsFragment();
-                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
-
-            } else if (itemId == R.id.nav_faq) {
-                fragment = new FaqFragment();
-                // add to back stack so back goes to previous fragment
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .addToBackStack(null)
-                        .commit();
+            } else if (itemId == R.id.nav_contact_us) {
+                fragment = new ContactUsFragment();
+                openFragment(fragment);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
 
-            } else if (itemId == R.id.nav_contact_us) {
-                fragment = new ContactUsFragment();
-                // ✅ Add to back stack so back returns to previous fragment
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, fragment)
-                        .addToBackStack(null)
-                        .commit();
+            } else if (itemId == R.id.nav_faq) {
+                fragment = new FaqFragment();
+                openFragment(fragment);
+                drawerLayout.closeDrawer(GravityCompat.START);
+                return true;
+
+            } else if (itemId == R.id.nav_settings) {
+                fragment = new SettingsFragment();
+                openFragment(fragment);
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
 
             } else if (itemId == R.id.nav_logout) {
-                logout();
+                showLogoutSnackbar();
+                return true;
             }
 
-            if (fragment != null) {
+            if (fragment != null && itemId != R.id.nav_contact_us
+                    && itemId != R.id.nav_faq && itemId != R.id.nav_settings) {
                 replaceFragment(fragment);
             }
 
@@ -128,51 +124,63 @@ public class UserDashboardActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
+        bottomNavigationView.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_SELECTED);
+
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment fragment = null;
-            int itemId = item.getItemId();
 
-            if (itemId == R.id.nav_find_space) {
+
+            if (item.getItemId() == R.id.nav_find_space) {
                 fragment = new FindYourSpaceFragment();
-            } else if (itemId == R.id.nav_my_bookings) {
+            } else if (item.getItemId() == R.id.nav_my_bookings) {
                 fragment = new MyBookingsFragment();
-            } else if (itemId == R.id.nav_settings) {
+            } else if (item.getItemId() == R.id.nav_settings) {
                 fragment = new SettingsFragment();
             }
 
             if (fragment != null) {
-                replaceFragment(fragment, false); // bottom nav should not add to back stack
+                replaceFragment(fragment); // no back stack
                 return true;
             }
+
             return false;
         });
     }
 
     private void replaceFragment(Fragment fragment) {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragmentContainer, fragment)
-                .commit();
-    }
-
-    private void replaceFragment(Fragment fragment, boolean addToBackStack) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragmentContainer, fragment);
-        if (addToBackStack) transaction.addToBackStack(null);
         transaction.commit();
     }
 
-    private void logout() {
-        FirebaseAuth.getInstance().signOut();
-        FysaApp.getAppContext()
-                .getSharedPreferences("theme_prefs", MODE_PRIVATE)
-                .edit()
-                .remove(KEY_USERNAME)
-                .apply();
+    private void openFragment(Fragment fragment) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragmentContainer, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+    }
 
+    private void showLogoutSnackbar() {
+        Snackbar snackbar = Snackbar.make(drawerLayout, "Are you sure you want to logout?", Snackbar.LENGTH_LONG)
+                .setAnchorView(bottomNavigationView)
+                .setAction("Logout", v -> performLogout());
+        snackbar.setBackgroundTint(ContextCompat.getColor(this, R.color.red_800));
+        snackbar.setTextColor(ContextCompat.getColor(this, R.color.white));
+        snackbar.setActionTextColor(ContextCompat.getColor(this, R.color.white));
+        snackbar.show();
+    }
+
+    private void performLogout() {
+        FirebaseAuth.getInstance().signOut();
+        if (FysaApp.getAppContext() != null) {
+            FysaApp.getAppContext().getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                    .edit().remove(KEY_USERNAME).apply();
+        }
         startActivity(new Intent(this, LoginActivity.class));
         finish();
     }
 
+    @SuppressLint("SetTextI18n")
     private void loadUsernameFromDatabase() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -181,14 +189,11 @@ public class UserDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        String uid = user.getUid();
-        DatabaseReference userRef = FirebaseDatabase.getInstance(
-                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        ).getReference("users").child(uid);
+        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
+                .getReference("users").child(user.getUid());
 
         userRef.child("name").get().addOnCompleteListener(task -> {
             String displayName = "User";
-
             if (task.isSuccessful() && task.getResult().exists()) {
                 String nameFromDb = task.getResult().getValue(String.class);
                 if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
@@ -214,51 +219,33 @@ public class UserDashboardActivity extends AppCompatActivity {
                 new OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
-                        handleCustomBackPressed();
+                        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                            drawerLayout.closeDrawer(GravityCompat.START);
+                            return;
+                        }
+
+                        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                            getSupportFragmentManager().popBackStack();
+                            return;
+                        }
+
+                        if (bottomNavigationView.getSelectedItemId() != R.id.nav_find_space) {
+                            bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
+                            return;
+                        }
+
+                        if (backPressedTime + 2000 > System.currentTimeMillis()) {
+                            finish();
+                        } else {
+                            Snackbar snackbar = Snackbar.make(drawerLayout, "Press back again to exit", Snackbar.LENGTH_SHORT)
+                                    .setAnchorView(bottomNavigationView);
+                            snackbar.setBackgroundTint(ContextCompat.getColor(UserDashboardActivity.this, R.color.blue_400));
+                            snackbar.setTextColor(ContextCompat.getColor(UserDashboardActivity.this, R.color.black));
+                            snackbar.show();
+                        }
+                        backPressedTime = System.currentTimeMillis();
                     }
                 });
-    }
-
-    private void handleCustomBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return;
-        }
-
-        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-            getSupportFragmentManager().popBackStack();
-            return;
-        }
-
-        int currentItemId = bottomNavigationView.getSelectedItemId();
-        if (currentItemId != R.id.nav_find_space) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
-            return;
-        }
-
-        if (backPressedTime + 2000 > System.currentTimeMillis()) {
-            if (backToast != null) backToast.cancel();
-            finish();
-        } else {
-            backToast = Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT);
-            backToast.show();
-        }
-        backPressedTime = System.currentTimeMillis();
-    }
-
-    private void handleNotificationIntent(Intent intent) {
-        if (intent != null && intent.hasExtra("open_fragment")) {
-            String fragmentToOpen = intent.getStringExtra("open_fragment");
-            if ("my_bookings".equals(fragmentToOpen)) {
-                bottomNavigationView.setSelectedItemId(R.id.nav_my_bookings);
-            }
-        }
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleNotificationIntent(intent);
     }
 
     @Override
@@ -269,7 +256,6 @@ public class UserDashboardActivity extends AppCompatActivity {
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
     }
 
-    // ✅ Allow fragments to navigate to default fragment
     public void navigateToDefaultFragment() {
         if (bottomNavigationView != null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
