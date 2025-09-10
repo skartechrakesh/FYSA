@@ -109,23 +109,6 @@
                 android:textColorHint="@color/textSecondary" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Category Spinner -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Select Category"
-            android:textColor="@color/textPrimary"
-            android:textStyle="bold" />
-
-        <Spinner
-            android:id="@+id/spinnerCategory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:minHeight="48dp"
-            android:spinnerMode="dropdown" />
-
         <!-- Map Section -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"

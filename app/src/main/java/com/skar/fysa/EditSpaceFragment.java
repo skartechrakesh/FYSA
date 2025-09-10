@@ -5,13 +5,13 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -22,10 +22,16 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -40,17 +46,19 @@ import java.util.Objects;
 public class EditSpaceFragment extends Fragment {
 
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
-    private Spinner spinnerCategory;
+    private MaterialAutoCompleteTextView spinnerCategory;
     private FloatingActionButton btnMyLocation;
     private ImageView crosshair;
     private MaterialButton btnSubmit;
-    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout;
+    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout;
     private MapView mapView;
 
     private DatabaseReference userSpacesRef, globalSpacesRef;
     private String currentUserId;
     private Space space;
 
+    private InterstitialAd mInterstitialAd;
+    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
@@ -97,7 +105,10 @@ public class EditSpaceFragment extends Fragment {
         initMap();
         handleBackPress();
 
-        FysaApp.setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout);
+        // Apply stroke helper for inputs
+        FysaApp.setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout);
+
+        loadInterstitialAd(); // Load interstitial ad
 
         return view;
     }
@@ -116,27 +127,46 @@ public class EditSpaceFragment extends Fragment {
         eOwnerNameLayout = view.findViewById(R.id.eOwnerNameLayout);
         eContactLayout = view.findViewById(R.id.eContactLayout);
         eAddressLayout = view.findViewById(R.id.eAddressLayout);
+        eCategoryLayout = view.findViewById(R.id.eCategoryLayout);
     }
 
     private void setupCategorySpinner() {
         String[] categories = {"Hostel", "PG", "Room", "House", "Flat"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_dropdown_item, categories);
+                android.R.layout.simple_dropdown_item_1line, categories);
         spinnerCategory.setAdapter(adapter);
 
-        // Pre-select current category
+        // Preselect value
         int position = adapter.getPosition(space.getType());
-        if (position >= 0) {
-            spinnerCategory.setSelection(position);
-        }
+        if (position >= 0) spinnerCategory.setText(adapter.getItem(position), false);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
-        btnSubmit.setOnClickListener(v -> updateSpace());
 
-        // Prevent ScrollView from intercepting map touch
+        btnSubmit.setOnClickListener(v -> {
+            new Handler().postDelayed(() -> {
+                if (mInterstitialAd != null) {
+                    mInterstitialAd.show(requireActivity());
+                    mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            updateSpace();
+                            loadInterstitialAd();
+                        }
+
+                        @Override
+                        public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                            updateSpace();
+                        }
+                    });
+                } else {
+                    updateSpace();
+                }
+            }, 1000);
+        });
+
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
             if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -151,7 +181,6 @@ public class EditSpaceFragment extends Fragment {
                 new OnBackPressedCallback(true) {
                     @Override
                     public void handleOnBackPressed() {
-                        // Pop this fragment to return to ManageSpacesFragment
                         getParentFragmentManager().popBackStack();
                     }
                 });
@@ -211,16 +240,15 @@ public class EditSpaceFragment extends Fragment {
         String ownerName = inputOwnerName.getText() != null ? inputOwnerName.getText().toString().trim() : "";
         String contact = inputContact.getText() != null ? inputContact.getText().toString().trim() : "";
         String address = inputAddress.getText() != null ? inputAddress.getText().toString().trim() : "";
-        String category = spinnerCategory.getSelectedItem().toString();
+        String category = spinnerCategory.getText() != null ? spinnerCategory.getText().toString() : "";
 
-        if (name.isEmpty() || ownerName.isEmpty() || contact.isEmpty() || address.isEmpty()) {
+        if (name.isEmpty() || ownerName.isEmpty() || contact.isEmpty() || address.isEmpty() || category.isEmpty()) {
             Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
             return;
         }
 
         GeoPoint center = (GeoPoint) mapView.getMapCenter();
 
-        // update space object
         space.setName(name);
         space.setOwnerName(ownerName);
         space.setContact(contact);
@@ -229,12 +257,10 @@ public class EditSpaceFragment extends Fragment {
         space.setLongitude(center.getLongitude());
         space.setType(category);
 
-        // write to global
         globalSpacesRef.child(category).child(space.getId())
                 .setValue(space)
                 .addOnCompleteListener(taskGlobal -> {
                     if (taskGlobal.isSuccessful()) {
-                        // write to user node
                         userSpacesRef.child(category).child(space.getId())
                                 .setValue(space)
                                 .addOnCompleteListener(taskUser -> {
@@ -251,6 +277,23 @@ public class EditSpaceFragment extends Fragment {
                         Toast.makeText(getContext(),
                                 "Global update failed: " + Objects.requireNonNull(taskGlobal.getException()).getMessage(),
                                 Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(requireContext(), INTERSTITIAL_AD_UNIT_ID, adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        mInterstitialAd = null;
                     }
                 });
     }
