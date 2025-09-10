@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -43,6 +44,7 @@ public class EditSpaceFragment extends Fragment {
     private FloatingActionButton btnMyLocation;
     private ImageView crosshair;
     private MaterialButton btnSubmit;
+    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout;
     private MapView mapView;
 
     private DatabaseReference userSpacesRef, globalSpacesRef;
@@ -95,6 +97,8 @@ public class EditSpaceFragment extends Fragment {
         initMap();
         handleBackPress();
 
+        FysaApp.setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout);
+
         return view;
     }
 
@@ -108,6 +112,10 @@ public class EditSpaceFragment extends Fragment {
         crosshair = view.findViewById(R.id.crosshair);
         btnSubmit = view.findViewById(R.id.btnSubmit);
         mapView = view.findViewById(R.id.mapView);
+        eNameLayout = view.findViewById(R.id.eNameLayout);
+        eOwnerNameLayout = view.findViewById(R.id.eOwnerNameLayout);
+        eContactLayout = view.findViewById(R.id.eContactLayout);
+        eAddressLayout = view.findViewById(R.id.eAddressLayout);
     }
 
     private void setupCategorySpinner() {

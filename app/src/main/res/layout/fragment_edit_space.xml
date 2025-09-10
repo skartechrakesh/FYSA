@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:padding="16dp">
 
     <LinearLayout
-        android:orientation="vertical"
+        android:id="@+id/formContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
         <!-- ===== Category Title ===== -->
         <TextView
@@ -18,79 +19,112 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="12dp"
             android:text="Edit Space"
+            android:textColor="@color/textPrimary"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/textPrimary" />
+            android:textStyle="bold" />
 
-        <!-- ===== Input Fields ===== -->
+        <!-- ===== Name ===== -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eNameLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Name">
+            android:hint="Name"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/linkText"
+            app:hintTextColor="@color/textSecondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputName"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textSecondary"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ===== Owner Name ===== -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eOwnerNameLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:hint="Owner Name"
-            android:layout_marginTop="8dp">
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/linkText"
+            app:hintTextColor="@color/textSecondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputOwnerName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
+                android:inputType="textPersonName"
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textSecondary"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ===== Contact Number ===== -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eContactLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:hint="Contact Number"
-            android:layout_marginTop="8dp">
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/linkText"
+            app:hintTextColor="@color/textSecondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputContact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="phone" />
+                android:inputType="phone"
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textSecondary"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- ===== Address ===== -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eAddressLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:hint="Address"
-            android:layout_marginTop="8dp">
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/linkText"
+            app:hintTextColor="@color/textSecondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputAddress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="top|start"
                 android:inputType="textMultiLine"
                 android:minLines="2"
-                android:gravity="top|start" />
+                android:textColor="@color/textPrimary"
+                android:textColorHint="@color/textSecondary"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Category Spinner ===== -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select Category"
-            android:textStyle="bold"
             android:layout_marginTop="12dp"
-            android:textColor="@color/textPrimary" />
+            android:text="Select Category"
+            android:textColor="@color/textPrimary"
+            android:textStyle="bold" />
 
         <Spinner
             android:id="@+id/spinnerCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/light_blue_50"
             android:layout_marginTop="4dp"
+            android:minHeight="48dp"
             android:spinnerMode="dropdown" />
 
         <!-- ===== Map Section ===== -->
@@ -114,19 +148,19 @@
                     android:id="@+id/crosshair"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:src="@drawable/ic_crosshair"
                     android:layout_centerInParent="true"
+                    android:src="@drawable/ic_crosshair"
                     app:tint="@android:color/holo_red_dark" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnMyLocation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/ic_my_location"
-                    android:contentDescription="My Location"
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
                     android:layout_margin="16dp"
+                    android:contentDescription="My Location"
+                    android:src="@drawable/ic_my_location"
                     app:backgroundTint="@color/linkText" />
             </RelativeLayout>
         </androidx.cardview.widget.CardView>
@@ -134,11 +168,12 @@
         <!-- ===== Submit Button ===== -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmit"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="Save Changes"
-            style="@style/Widget.MaterialComponents.Button"
             app:cornerRadius="8dp" />
+
     </LinearLayout>
 </ScrollView>
