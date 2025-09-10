@@ -17,13 +17,16 @@
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_marginBottom="24dp">
+
             <ImageView
                 android:id="@+id/imgProfile"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="@color/transparent"
+                android:importantForAccessibility="no"
                 android:scaleType="centerCrop"
                 android:src="@mipmap/ic_profile_image_round"
-                android:background="@color/transparent" />
+                tools:ignore="ImageContrastCheck" />
         </FrameLayout>
 
         <!-- Saveable Form -->
@@ -37,33 +40,39 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Name"/>
+                android:text="@string/full_name"/>
+
             <EditText
                 android:id="@+id/etName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Full Name"
+                android:autofillHints=""
+                android:hint="@string/full_name"
                 android:inputType="textPersonName"
-                android:minHeight="48dp" />
+                android:minHeight="48dp"
+                tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
             <!-- User Name -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="User Name"/>
+                android:text="@string/username"/>
+
             <EditText
                 android:id="@+id/etUsername"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Username"
+                android:hint="@string/username"
+                android:importantForAutofill="no"
                 android:inputType="text"
-                android:minHeight="48dp" />
+                android:minHeight="48dp"
+                tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
             <!-- Email with Verify -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Email Id"/>
+                android:text="@string/email"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -75,16 +84,18 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Email Address"
+                    android:autofillHints=""
                     android:enabled="false"
+                    android:hint="@string/email"
+                    android:inputType="textEmailAddress"
                     android:minHeight="48dp"
-                    android:inputType="textEmailAddress"/>
+                    tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
                 <Button
                     android:id="@+id/btnVerifyEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Verify"
+                    android:text="@string/verify"
                     android:layout_marginStart="8dp"/>
 
                 <TextView
@@ -100,7 +111,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Password"/>
+                android:text="@string/password"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -115,7 +126,8 @@
                     android:inputType="textPassword"
                     android:minHeight="48dp"
                     android:enabled="false"
-                    android:text="********"/>
+                    android:text="@string/stars_password"
+                    tools:ignore="Autofill,VisualLintTextFieldSize" />
 
                 <ImageButton
                     android:id="@+id/btnEditPassword"
@@ -125,7 +137,7 @@
                     android:padding="8dp"
                     android:src="@drawable/ic_edit"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Edit Password"
+                    android:contentDescription="@string/edit_password"
                     app:tint="@color/textPrimary" />
             </LinearLayout>
 
@@ -133,7 +145,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Contact"/>
+                android:text="@string/contact_number"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -145,16 +157,18 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Contact Number"
+                    android:hint="@string/contact_number"
+                    android:importantForAutofill="no"
                     android:inputType="phone"
-                    android:minHeight="48dp"/>
+                    android:minHeight="48dp"
+                    tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
             </LinearLayout>
 
             <!-- Account Type -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Account Type"/>
+                android:text="@string/account_type"/>
             <TextView
                 android:id="@+id/tvAccountType"
                 android:layout_width="match_parent"
@@ -169,18 +183,20 @@
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Save"
-                android:layout_marginTop="24dp"/>
+                android:text="@string/save"
+                android:layout_marginTop="24dp"
+                tools:ignore="VisualLintButtonSize" />
 
             <!-- Delete Account Button -->
             <Button
                 android:id="@+id/btnDeleteAccount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Delete Account"
+                android:text="@string/delete_account"
                 android:layout_marginTop="16dp"
                 android:backgroundTint="@color/red_500"
-                android:textColor="@color/textPrimary"/>
+                android:textColor="@color/textPrimary"
+                tools:ignore="VisualLintButtonSize" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

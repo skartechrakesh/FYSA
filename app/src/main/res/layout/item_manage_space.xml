@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -20,7 +21,7 @@
             android:id="@+id/spaceName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Space Name"
+            android:text="@string/Space_Name"
             android:textSize="16sp"
             android:textColor="@color/textPrimary" />
 
@@ -29,12 +30,12 @@
             android:id="@+id/vacancySwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textOn="Yes"
-            android:textOff="No"
+            android:textOn="@string/yes"
+            android:textOff="@string/no"
             android:checked="true"
             app:trackTint="@color/switch_track_selector"
             app:thumbTint="@color/switch_thumb_selector"
-            android:text="Vacancy Available:    " />
+            android:text="@string/vacancy_available1" />
     </LinearLayout>
 
     <!-- Edit Button -->
@@ -42,11 +43,12 @@
         android:id="@+id/btnEditSpace"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_edit"
         android:contentDescription="@string/edit_space"
+        android:src="@drawable/ic_edit"
         app:tint="@color/linkText"
-        android:layout_marginEnd="8dp" />
+        tools:ignore="ImageContrastCheck" />
 
     <!-- Delete Button -->
     <ImageButton
@@ -55,6 +57,6 @@
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_delete"
-        android:contentDescription="Delete Space"
+        android:contentDescription="@string/delete_space"
         app:tint="@color/red_700" />
 </LinearLayout>

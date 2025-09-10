@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -20,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="12dp"
-            android:text="Edit Space"
+            android:text="@string/edit_space"
             android:textColor="@color/textPrimary"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -31,7 +32,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Space Name"
+            android:hint="@string/Space_Name"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -41,7 +42,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary" />
+                android:textColorHint="#546E7A"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Owner Name -->
@@ -51,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Owner Name"
+            android:hint="@string/owner_name"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -62,7 +64,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary" />
+                android:textColorHint="#546E7A"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Contact Number -->
@@ -72,7 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Contact Number"
+            android:hint="@string/contact_number"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -83,7 +86,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="phone"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary" />
+                android:textColorHint="#546E7A"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Address -->
@@ -93,7 +97,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Address"
+            android:hint="@string/address"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -106,7 +110,8 @@
                 android:inputType="textMultiLine"
                 android:minLines="2"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary" />
+                android:textColorHint="#546E7A"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Map Section -->
@@ -130,6 +135,7 @@
                     android:id="@+id/crosshair"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
+                    android:contentDescription="@string/crosshair"
                     android:layout_centerInParent="true"
                     android:src="@drawable/ic_crosshair"
                     app:tint="@android:color/holo_red_dark" />
@@ -141,7 +147,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
                     android:layout_margin="16dp"
-                    android:contentDescription="My Location"
+                    android:contentDescription="@string/my_location"
                     android:src="@drawable/ic_my_location"
                     app:backgroundTint="@color/linkText" />
             </RelativeLayout>
@@ -154,7 +160,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Save Changes"
-            app:cornerRadius="12dp" />
+            android:text="@string/submit"
+            android:backgroundTint="@color/btnSecondary"
+            android:textColor="@color/textPrimary"
+            app:cornerRadius="12dp"
+            tools:ignore="TouchTargetSizeCheck,VisualLintButtonSize" />
     </LinearLayout>
 </ScrollView>

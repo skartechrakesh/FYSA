@@ -4,22 +4,22 @@
     <item
         android:id="@+id/nav_manage_spaces"
         android:icon="@drawable/ic_manage_spaces"
-        android:title="Manage" />
+        android:title="@string/manage" />
 
     <item
         android:id="@+id/nav_bookings"
         android:icon="@drawable/ic_bookings_overview"
-        android:title="Bookings" />
+        android:title="@string/bookings" />
 
 
     <item
         android:id="@+id/nav_add_new_space"
         android:icon="@drawable/ic_add_space"
-        android:title="Add Space" />
+        android:title="@string/add_space" />
 
     <item
         android:id="@+id/nav_preferences"
         android:icon="@drawable/ic_preferences"
-        android:title="Preferences" />
+        android:title="@string/preferences" />
 
 </menu>

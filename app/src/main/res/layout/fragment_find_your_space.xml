@@ -5,7 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".FindYourSpaceFragment">
+    tools:context=".FindYourSpaceFragment"
+    tools:ignore="VisualLintBounds">
 
     <!-- Category Filter -->
     <com.google.android.flexbox.FlexboxLayout
@@ -24,7 +25,7 @@
             android:id="@+id/cbHostel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hostel"
+            android:text="@string/hostel"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"/>
 
@@ -32,7 +33,7 @@
             android:id="@+id/cbPG"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="PG"
+            android:text="@string/pg"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"/>
 
@@ -40,7 +41,7 @@
             android:id="@+id/cbRoom"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Room"
+            android:text="@string/room"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"/>
 
@@ -48,7 +49,7 @@
             android:id="@+id/cbHouse"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="House"
+            android:text="@string/house"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"/>
 
@@ -56,7 +57,7 @@
             android:id="@+id/cbFlat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Flat"
+            android:text="@string/flat"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="4dp"/>
     </com.google.android.flexbox.FlexboxLayout>
@@ -76,7 +77,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            tools:ignore="VisualLintBounds">
 
             <TextView
                 android:id="@+id/ad_headline"
@@ -92,16 +94,18 @@
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="4dp"/>
+                android:layout_marginTop="4dp"
+                tools:ignore="VisualLintBounds" />
 
             <Button
                 android:id="@+id/ad_call_to_action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Visit"
+                android:text="@string/visit"
                 android:layout_marginTop="6dp"
                 android:textColor="@android:color/white"
-                android:background="?attr/colorPrimary"/>
+                android:background="?attr/colorPrimary"
+                tools:ignore="VisualLintBounds" />
         </LinearLayout>
     </com.google.android.gms.ads.nativead.NativeAdView>
 

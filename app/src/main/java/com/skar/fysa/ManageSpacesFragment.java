@@ -31,7 +31,6 @@ public class ManageSpacesFragment extends Fragment {
 
     private LinearLayout spacesListContainer;
     private DatabaseReference userSpacesRef, globalSpacesRef;
-    private String currentUserId;
     private SwipeRefreshLayout swipeRefreshLayout;
 
     @Nullable
@@ -45,7 +44,7 @@ public class ManageSpacesFragment extends Fragment {
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
 
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+            String currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
 
             FirebaseDatabase db = FirebaseDatabase.getInstance(
                     "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
@@ -156,34 +155,28 @@ public class ManageSpacesFragment extends Fragment {
         });
 
         // Delete button
-        btnDeleteSpace.setOnClickListener(v -> {
-            new AlertDialog.Builder(requireContext())
-                    .setTitle("Delete Space")
-                    .setMessage("Are you sure you want to delete " + space.getName() + "?")
-                    .setPositiveButton("Yes", (dialog, which) -> {
-                        spaceSnapshot.getRef().removeValue()
-                                .addOnSuccessListener(aVoid -> {
-                                    globalSpacesRef.child(category).child(space.getId())
-                                            .removeValue()
-                                            .addOnSuccessListener(aVoid2 -> {
-                                                Toast.makeText(getContext(),
-                                                        "Deleted " + space.getName(),
-                                                        Toast.LENGTH_SHORT).show();
-                                                loadSpaces(inflater);
-                                            })
-                                            .addOnFailureListener(e ->
-                                                    Toast.makeText(getContext(),
-                                                            "Failed global delete: " + e.getMessage(),
-                                                            Toast.LENGTH_LONG).show());
+        btnDeleteSpace.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Space")
+                .setMessage("Are you sure you want to delete " + space.getName() + "?")
+                .setPositiveButton("Yes", (dialog, which) -> spaceSnapshot.getRef().removeValue()
+                        .addOnSuccessListener(aVoid -> globalSpacesRef.child(category).child(space.getId())
+                                .removeValue()
+                                .addOnSuccessListener(aVoid2 -> {
+                                    Toast.makeText(getContext(),
+                                            "Deleted " + space.getName(),
+                                            Toast.LENGTH_SHORT).show();
+                                    loadSpaces(inflater);
                                 })
                                 .addOnFailureListener(e ->
                                         Toast.makeText(getContext(),
-                                                "Failed to delete: " + e.getMessage(),
-                                                Toast.LENGTH_LONG).show());
-                    })
-                    .setNegativeButton("No", null)
-                    .show();
-        });
+                                                "Failed global delete: " + e.getMessage(),
+                                                Toast.LENGTH_LONG).show()))
+                        .addOnFailureListener(e ->
+                                Toast.makeText(getContext(),
+                                        "Failed to delete: " + e.getMessage(),
+                                        Toast.LENGTH_LONG).show()))
+                .setNegativeButton("No", null)
+                .show());
 
         spacesListContainer.addView(spaceRow);
     }

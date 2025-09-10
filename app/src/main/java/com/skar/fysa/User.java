@@ -2,6 +2,7 @@ package com.skar.fysa;
 
 public class User {
     private String username;
+    private String contact;
     private String name;
     private String email;
     private String accountType; // "user" or "owner"
@@ -12,8 +13,9 @@ public class User {
     }
 
     // Full constructor
-    public User(String username, String name, String email, String accountType, String uid) {
+    public User(String username, String contact, String name, String email, String accountType, String uid) {
         this.username = username;
+        this.contact = contact;
         this.name = name;
         this.email = email;
         this.accountType = accountType;
@@ -24,6 +26,8 @@ public class User {
     public String getUsername() {
         return username;
     }
+
+    public String getContact() { return contact; }
 
     public String getName() {
         return name;
@@ -45,6 +49,8 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public void setContact(String contact) { this.contact = contact; }
 
     public void setName(String name) {
         this.name = name;

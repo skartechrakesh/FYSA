@@ -12,8 +12,9 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.LinearLayout;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
@@ -57,6 +58,20 @@ public class FindYourSpaceFragment extends Fragment {
 
     private final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
+    private final ActivityResultLauncher<String[]> permissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                Boolean fine = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+
+                if (Boolean.TRUE.equals(fine) || Boolean.TRUE.equals(coarse)) {
+                    fetchUserLocationAndThenSpaces();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Location permission denied", Toast.LENGTH_SHORT).show();
+                }
+            });
+
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -119,10 +134,10 @@ public class FindYourSpaceFragment extends Fragment {
                 ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
 
-            requestPermissions(new String[]{
+            permissionLauncher.launch(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
-            }, LOCATION_PERMISSION_REQUEST);
+            });
         } else {
             fetchUserLocationAndThenSpaces();
         }

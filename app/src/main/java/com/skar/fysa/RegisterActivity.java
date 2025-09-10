@@ -43,6 +43,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 
+@SuppressWarnings("deprecation")
 public class RegisterActivity extends AppCompatActivity {
 
     private static final String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
@@ -53,16 +54,15 @@ public class RegisterActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private com.google.android.gms.common.SignInButton btnGoogleSignIn;
 
-    private TextInputLayout nameLayout, usernameLayout, emailLayout, passwordLayout, confirmPasswordLayout;
-    private TextInputEditText passwordEdit, confirmPasswordEdit;
+    private TextInputLayout nameLayout, usernameLayout, contactLayout, emailLayout, passwordLayout, confirmPasswordLayout;
+    private TextInputEditText contactEdit, passwordEdit, confirmPasswordEdit;
 
     private FirebaseAuth auth;
     private GoogleSignInClient googleSignInClient;
 
-    // Keep a temp chosen username when we prompt BEFORE dark-mode external OAuth flow
     private String preChosenUsernameForExternalGoogle = null;
+    private String preChosenContactForExternalGoogle = null;
 
-    // Activity Result launcher for regular Google Sign-In (light mode)
     private final ActivityResultLauncher<Intent> googleSignInLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 setLoading(false);
@@ -70,10 +70,7 @@ public class RegisterActivity extends AppCompatActivity {
                     Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                     try {
                         GoogleSignInAccount account = task.getResult(ApiException.class);
-                        if (account != null) {
-                            // sign into Firebase with the Google credential
-                            handleGoogleAccount(account);
-                        }
+                        if (account != null) handleGoogleAccount(account);
                     } catch (ApiException e) {
                         showSnackbar("Google Sign-In failed: " + e.getMessage());
                     }
@@ -90,7 +87,6 @@ public class RegisterActivity extends AppCompatActivity {
         FirebaseApp.initializeApp(this);
         FysaApp.setStatusBarColor(this);
 
-        // init views
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         btnRegisterSubmit = findViewById(R.id.btnRegisterSubmit);
         TextView linkLogin = findViewById(R.id.linkLogin);
@@ -100,16 +96,18 @@ public class RegisterActivity extends AppCompatActivity {
 
         nameLayout = findViewById(R.id.nameLayout);
         usernameLayout = findViewById(R.id.usernameLayout);
+        contactLayout = findViewById(R.id.contactLayout);
         emailLayout = findViewById(R.id.emailLayout);
         passwordLayout = findViewById(R.id.passwordLayout);
         confirmPasswordLayout = findViewById(R.id.confirmPasswordLayout);
 
+        contactEdit = findViewById(R.id.inputContact);
         passwordEdit = (TextInputEditText) passwordLayout.getEditText();
         confirmPasswordEdit = (TextInputEditText) confirmPasswordLayout.getEditText();
 
         auth = FirebaseAuth.getInstance();
 
-        FysaApp.setupTextInputStrokes(this, nameLayout, usernameLayout, emailLayout, passwordLayout, confirmPasswordLayout);
+        FysaApp.setupTextInputStrokes(this, nameLayout, usernameLayout, contactLayout, emailLayout, passwordLayout, confirmPasswordLayout);
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
         btnThemeToggle.setOnClickListener(v -> FysaApp.toggleThemeWithAnimation(this, btnThemeToggle));
 
@@ -141,7 +139,6 @@ public class RegisterActivity extends AppCompatActivity {
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
     }
 
-    // ---------------- Google Sign-In setup ----------------
     private void setupGoogleSignIn() {
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
@@ -150,28 +147,15 @@ public class RegisterActivity extends AppCompatActivity {
         googleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
-    /**
-     * Entry when user taps Google Register button.
-     * Behavior:
-     *   - In dark mode: first prompt for username, then start external OAuth-based sign-in (so username is known prior to auth).
-     *   - Otherwise (light mode): start Google Sign-In intent; after sign-in, if user doesn't exist, prompt for username.
-     */
     private void handleGoogleRegisterClick() {
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
-            // dark mode: prompt username first
-            String suggested = "user" + new Random().nextInt(1000); // simple fallback suggestion
-            promptForGoogleUsername(suggested, chosen -> {
-                preChosenUsernameForExternalGoogle = chosen;
-                startExternalGoogleOAuth();
-            });
-        } else {
-            // light mode: regular Google sign-in intent, handle username AFTER sign-in
-            setLoading(true);
-            googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
-        }
+        String suggestedUsername = "user" + new Random().nextInt(1000);
+        promptForGoogleUsername(suggestedUsername, (chosenUsername, chosenContact) -> {
+            preChosenUsernameForExternalGoogle = chosenUsername;
+            preChosenContactForExternalGoogle = chosenContact;
+            startExternalGoogleOAuth();
+        });
     }
 
-    // For light-mode path: we get GoogleSignInAccount, then firebaseAuthWithGoogle(account)
     private void handleGoogleAccount(GoogleSignInAccount account) {
         setLoading(true);
         AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
@@ -186,28 +170,20 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-    // ---------------- External OAuth (dark-mode) ----------------
     private void startExternalGoogleOAuth() {
         setLoading(true);
         OAuthProvider.Builder provider = OAuthProvider.newBuilder("google.com");
-        // startActivityForSignInWithProvider may open external browser / custom tab depending on system
         auth.startActivityForSignInWithProvider(this, provider.build())
                 .addOnSuccessListener(authResult -> {
                     setLoading(false);
                     FirebaseUser user = authResult.getUser();
-                    if (user != null) {
-                        // We prompted for username already (preChosenUsernameForExternalGoogle)
-                        if (preChosenUsernameForExternalGoogle == null || preChosenUsernameForExternalGoogle.isEmpty()) {
-                            // Safety: prompt again if somehow missing
-                            promptForGoogleUsername(suggestUsername(user.getDisplayName()), chosen -> {
-                                registerGoogleUserWithChosenUsername(user, chosen, FysaApp.getString(this, "account_type", "user"));
-                            });
-                        } else {
-                            registerGoogleUserWithChosenUsername(user, preChosenUsernameForExternalGoogle, FysaApp.getString(this, "account_type", "user"));
-                            preChosenUsernameForExternalGoogle = null;
-                        }
+                    if (user != null && preChosenUsernameForExternalGoogle != null && preChosenContactForExternalGoogle != null) {
+                        registerGoogleUserWithChosenUsername(user, preChosenUsernameForExternalGoogle, preChosenContactForExternalGoogle,
+                                FysaApp.getString(this, "account_type", "user"));
+                        preChosenUsernameForExternalGoogle = null;
+                        preChosenContactForExternalGoogle = null;
                     } else {
-                        showSnackbar("Google sign-in succeeded but user is null.");
+                        showSnackbar("Google registration error: Missing username or contact.");
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -216,7 +192,6 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-    // Shared: check if firebase user exists in /users; if not, prompt username then register
     private void checkAndRegisterGoogleUser(FirebaseUser user, String displayName) {
         DatabaseReference dbRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference();
         dbRef.child("users").child(user.getUid()).get().addOnCompleteListener(task -> {
@@ -226,57 +201,63 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
             if (!task.getResult().exists()) {
-                // user doesn't exist: ask for username (suggested from display name)
                 String suggested = suggestUsername(displayName);
-                promptForGoogleUsername(suggested, chosenUsername -> registerGoogleUserWithChosenUsername(user, chosenUsername, FysaApp.getString(this, "account_type", "user")));
+                promptForGoogleUsername(suggested, (chosenUsername, chosenContact) ->
+                        registerGoogleUserWithChosenUsername(user, chosenUsername, chosenContact,
+                                FysaApp.getString(this, "account_type", "user")));
             } else {
-                // user exists — proceed to redirect
                 redirectUser(task.getResult().child("accountType").getValue(String.class));
             }
         });
     }
 
-    // Called in both flows: takes firebase user(uid) and chosen username & writes username index + user data.
-    private void registerGoogleUserWithChosenUsername(FirebaseUser user, String username, String accountType) {
+    private void registerGoogleUserWithChosenUsername(FirebaseUser user, String username, String contact, String accountType) {
         setLoading(true);
         DatabaseReference usernameRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL)
                 .getReference("usernames").child(username);
 
-        // verify uniqueness first (avoid overwriting)
         usernameRef.get().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 setLoading(false);
                 showSnackbar("Failed to check username. Try again.");
                 return;
             }
-
             if (task.getResult().exists()) {
                 setLoading(false);
                 showSnackbar("Username already exists. Choose another one.");
-                // because in dark-mode we already had pre-chosen username, ask again
-                promptForGoogleUsername(suggestUsername(user.getDisplayName()), chosen -> registerGoogleUserWithChosenUsername(user, chosen, accountType));
+                promptForGoogleUsername(suggestUsername(user.getDisplayName()), (newUsername, newContact) ->
+                        registerGoogleUserWithChosenUsername(user, newUsername, newContact, accountType));
             } else {
                 usernameRef.setValue(user.getUid(), (error, ref) -> {
                     if (error != null) {
                         setLoading(false);
                         showSnackbar("Failed to save username. Try again.");
                     } else {
-                        // save user_secure and users entries
-                        saveUserData(user.getUid(), username, user.getEmail(), user.getDisplayName(), accountType, false);
+                        saveUserData(user.getUid(), username, contact, user.getEmail(), user.getDisplayName(), accountType, false);
                     }
                 });
             }
         });
     }
 
-    // ---------------- Email registration flow ----------------
     private void performEmailRegistration() {
         String name = getText(nameLayout);
         String username = getText(usernameLayout);
+        String contact = getText(contactLayout);
         String email = getText(emailLayout);
         String password = getText(passwordLayout);
         String confirmPassword = getText(confirmPasswordLayout);
         String accountType = FysaApp.getString(this, "account_type", "user");
+
+        if (contact.isEmpty()) {
+            showSnackbar("Please enter contact number");
+            return;
+        }
+
+        if (!contact.matches("^\\+?[0-9]{7,10}$")) {
+            contactLayout.setError("Invalid contact number");
+            return;
+        } else contactLayout.setError(null);
 
         if (name.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             showSnackbar("Please fill all fields");
@@ -303,7 +284,6 @@ public class RegisterActivity extends AppCompatActivity {
         DatabaseReference usernameRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL)
                 .getReference("usernames").child(username);
 
-        // check uniqueness then create auth user and write DB
         usernameRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
@@ -322,7 +302,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 setLoading(false);
                                 showSnackbar("Registration failed. Please try again.");
                             } else {
-                                saveUserData(firebaseUser.getUid(), username, email, name, accountType, true);
+                                saveUserData(firebaseUser.getUid(), username, contact, email, name, accountType, true);
                             }
                         });
                     } else {
@@ -339,12 +319,11 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-    // Save both user_secure and users nodes; called after username index is reserved
-    private void saveUserData(String uid, String username, String email, String name, String accountType, boolean isEmailRegistration) {
+    private void saveUserData(String uid, String username, String contact, String email, String name, String accountType, boolean isEmailRegistration) {
         DatabaseReference dbRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference();
 
         dbRef.child("user_secure").child(uid).setValue(new UserSecure(uid, username, email));
-        dbRef.child("users").child(uid).setValue(new User(username, name, email, accountType, uid))
+        dbRef.child("users").child(uid).setValue(new User(username, contact, name, email, accountType, uid))
                 .addOnCompleteListener(task -> {
                     setLoading(false);
                     if (task.isSuccessful()) {
@@ -363,12 +342,10 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-    // ---------------- Helpers ----------------
     private boolean isValidUsername(String username) {
         return username.matches("^[a-z0-9]{5,}$");
     }
 
-    // returns true when password is weak
     private boolean isPasswordWeak(String password) {
         return !password.matches("^(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]{8,}$");
     }
@@ -379,13 +356,11 @@ public class RegisterActivity extends AppCompatActivity {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
                 @Override public void afterTextChanged(Editable s) {
-                    if (isPasswordWeak(s.toString())) {
-                        passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
-                    } else passwordLayout.setError(null);
+                    if (isPasswordWeak(s.toString())) passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
+                    else passwordLayout.setError(null);
                 }
             });
         }
-
         if (confirmPasswordEdit != null) {
             confirmPasswordEdit.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -422,22 +397,33 @@ public class RegisterActivity extends AppCompatActivity {
         return base + new Random().nextInt(1000);
     }
 
-    // Prompt dialog that lets the user choose username; invokes listener with chosen username
     private void promptForGoogleUsername(String suggested, OnUsernameChosenListener listener) {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_username_prompt, null);
-        TextInputLayout inputLayout = dialogView.findViewById(R.id.usernameInputLayout);
-        TextInputEditText inputEdit = (TextInputEditText) inputLayout.getEditText();
-        if (inputEdit != null) inputEdit.setText(suggested);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_username_prompt_with_contact, null);
+
+        TextInputLayout usernameLayout = dialogView.findViewById(R.id.usernameInputLayout);
+        TextInputLayout contactLayout = dialogView.findViewById(R.id.contactInputLayout);
+
+        TextInputEditText usernameEdit = (TextInputEditText) usernameLayout.getEditText();
+        TextInputEditText contactEdit = (TextInputEditText) contactLayout.getEditText();
+
+        if (usernameEdit != null) usernameEdit.setText(suggested);
 
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setView(dialogView)
-                .setTitle("Choose a username")
+                .setTitle("Choose a username & contact")
                 .setPositiveButton("Continue", (dialog, which) -> {
-                    if (inputEdit != null) {
-                        String chosen = Objects.requireNonNull(inputEdit.getText()).toString().trim();
-                        if (isValidUsername(chosen)) listener.onUsernameChosen(chosen);
-                        else showSnackbar("Invalid username (min 5 chars, lowercase letters & numbers only)");
+                    String chosenUsername = usernameEdit != null ? Objects.requireNonNull(usernameEdit.getText()).toString().trim() : "";
+                    String chosenContact = contactEdit != null ? Objects.requireNonNull(contactEdit.getText()).toString().trim() : "";
+
+                    if (!isValidUsername(chosenUsername)) {
+                        showSnackbar("Invalid username (min 5 chars, lowercase letters & numbers only)");
+                        return;
                     }
+                    if (!chosenContact.matches("^\\+?[0-9]{7,10}$")) {
+                        showSnackbar("Invalid contact number");
+                        return;
+                    }
+                    listener.onUsernameChosen(chosenUsername, chosenContact);
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> auth.signOut())
                 .setCancelable(false)
@@ -457,6 +443,6 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private interface OnUsernameChosenListener {
-        void onUsernameChosen(String username);
+        void onUsernameChosen(String username, String contact);
     }
 }

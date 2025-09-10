@@ -2,6 +2,7 @@ package com.skar.fysa;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -12,7 +13,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,6 +33,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -51,12 +53,11 @@ public class SpaceFormFragment extends Fragment {
     private TextView txtCategory;
     private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
     private FloatingActionButton btnMyLocation;
-    private ImageView crosshair;
 
     private DatabaseReference userSpacesRef, globalSpacesRef;
     private String category;
 
-    private InterstitialAd mInterstitialAd; // Interstitial Ad
+    private InterstitialAd mInterstitialAd;
     private final Handler adHandler = new Handler();
 
     private final ActivityResultLauncher<String> locationPermissionLauncher =
@@ -65,6 +66,7 @@ public class SpaceFormFragment extends Fragment {
                 else Toast.makeText(getContext(), "Location permission denied", Toast.LENGTH_SHORT).show();
             });
 
+    @SuppressLint("SetTextI18n")
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -103,8 +105,8 @@ public class SpaceFormFragment extends Fragment {
         txtCategory.setText("Category: " + category);
         FysaApp.setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
 
-        // Load interstitial ad
         loadInterstitialAd();
+        loadDefaultUserData(); // Load default owner name & contact
 
         return view;
     }
@@ -118,7 +120,6 @@ public class SpaceFormFragment extends Fragment {
         mapView = view.findViewById(R.id.mapView);
         txtCategory = view.findViewById(R.id.txtCategory);
         btnMyLocation = view.findViewById(R.id.btnMyLocation);
-        crosshair = view.findViewById(R.id.crosshair);
         nameLayout = view.findViewById(R.id.nameLayout);
         ownerNameLayout = view.findViewById(R.id.ownerNameLayout);
         contactLayout = view.findViewById(R.id.contactLayout);
@@ -130,7 +131,6 @@ public class SpaceFormFragment extends Fragment {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
 
         btnSubmit.setOnClickListener(v -> {
-            // Show interstitial after 1000 ms, then submit form
             adHandler.postDelayed(() -> {
                 if (mInterstitialAd != null) {
                     mInterstitialAd.show(requireActivity());
@@ -138,21 +138,20 @@ public class SpaceFormFragment extends Fragment {
                         @Override
                         public void onAdDismissedFullScreenContent() {
                             submitForm();
-                            loadInterstitialAd(); // Load next ad
+                            loadInterstitialAd();
                         }
 
                         @Override
                         public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
-                            submitForm(); // Submit even if ad fails
+                            submitForm();
                         }
                     });
                 } else {
-                    submitForm(); // If ad not loaded, submit immediately
+                    submitForm();
                 }
             }, 1000);
         });
 
-        // Smooth map dragging inside scrollable parent
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
             if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -174,7 +173,7 @@ public class SpaceFormFragment extends Fragment {
                             getParentFragmentManager().popBackStack();
                         } else {
                             setEnabled(false);
-                            requireActivity().onBackPressed();
+                            requireActivity().getOnBackPressedDispatcher().onBackPressed();
                         }
                     }
                 });
@@ -197,7 +196,7 @@ public class SpaceFormFragment extends Fragment {
 
     @SuppressLint("MissingPermission")
     private void moveToCurrentLocation() {
-        LocationManager lm = (LocationManager) requireContext().getSystemService(getContext().LOCATION_SERVICE);
+        LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         try {
             Location last = null;
             if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER))
@@ -243,17 +242,8 @@ public class SpaceFormFragment extends Fragment {
         }
 
         Space space = new Space(
-                spaceId,
-                name,
-                category,
-                center.getLatitude(),
-                center.getLongitude(),
-                uid,
-                ownerName,
-                address,
-                contact,
-                email,
-                true
+                spaceId, name, category, center.getLatitude(), center.getLongitude(),
+                uid, ownerName, address, contact, email, true
         );
 
         globalSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(globalTask -> {
@@ -287,6 +277,31 @@ public class SpaceFormFragment extends Fragment {
                         mInterstitialAd = null;
                     }
                 });
+    }
+
+    private void loadDefaultUserData() {
+        String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+        DatabaseReference userRef = FirebaseDatabase.getInstance(
+                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        ).getReference("users").child(uid);
+
+        userRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) return;
+
+                String name = snapshot.child("name").getValue(String.class);
+                String contact = snapshot.child("contact").getValue(String.class);
+
+                if (name != null) inputOwnerName.setText(name);
+                if (contact != null) inputContact.setText(contact);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(getContext(), "Failed to load user data: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

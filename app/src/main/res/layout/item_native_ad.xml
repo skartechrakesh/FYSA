@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.gms.ads.nativead.NativeAdView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:color/white"
@@ -36,7 +37,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:backgroundTint="@color/btnSecondary"
+            android:text="@string/install"
             android:textColor="@android:color/white"
-            android:text="Install" />
+            tools:ignore="TextContrastCheck" />
     </LinearLayout>
 </com.google.android.gms.ads.nativead.NativeAdView>

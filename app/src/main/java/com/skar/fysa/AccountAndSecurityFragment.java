@@ -20,6 +20,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -174,11 +175,11 @@ public class AccountAndSecurityFragment extends Fragment {
         if (currentUser == null) return;
         if (currentUser.isEmailVerified()) {
             tvEmailVerified.setText("Verified ✅");
-            tvEmailVerified.setTextColor(getResources().getColor(R.color.green_500));
+            tvEmailVerified.setTextColor(ContextCompat.getColor(requireContext(), R.color.green_500));
             btnVerifyEmail.setVisibility(View.GONE);
         } else {
             tvEmailVerified.setText("Not Verified ❌");
-            tvEmailVerified.setTextColor(getResources().getColor(R.color.red_500));
+            tvEmailVerified.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_500));
             btnVerifyEmail.setVisibility(View.VISIBLE);
         }
     }

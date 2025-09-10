@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Username Field -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/usernameInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/username"
+        app:boxStrokeColor="@color/blue_500"
+        app:boxStrokeWidth="2dp"
+        app:boxStrokeWidthFocused="3dp"
+        app:counterEnabled="true"
+        app:counterMaxLength="20"
+        app:errorEnabled="true"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/usernameInputEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionNext"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="@color/textPrimary"
+            tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Contact Field -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/contactInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/contact_number"
+        app:boxStrokeColor="@color/blue_500"
+        app:boxStrokeWidth="2dp"
+        app:boxStrokeWidthFocused="3dp"
+        app:counterEnabled="true"
+        app:counterMaxLength="10"
+        app:errorEnabled="true"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/contactInputEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="phone"
+            android:singleLine="true"
+            android:textColor="@color/textPrimary"
+            tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

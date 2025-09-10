@@ -18,7 +18,8 @@
         android:src="@drawable/logo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ImageContrastCheck" />
 
     <!-- Title -->
     <TextView
@@ -57,13 +58,14 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
         android:layout_marginEnd="24dp"
-        android:backgroundTint="@color/btnPrimary"
+        android:backgroundTint="@color/green_600"
         android:text="@string/login"
-        android:textColor="@color/btnTextPrimary"
+        android:textColor="@color/textPrimary"
         app:cornerRadius="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/appSubtitle" />
+        app:layout_constraintTop_toBottomOf="@id/appSubtitle"
+        tools:ignore="VisualLintButtonSize" />
 
     <!-- Register Button -->
     <Button
@@ -76,11 +78,12 @@
         android:layout_marginEnd="24dp"
         android:backgroundTint="@color/btnSecondary"
         android:text="@string/register"
-        android:textColor="@color/btnTextSecondary"
+        android:textColor="@color/textPrimary"
         app:cornerRadius="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btnLogin" />
+        app:layout_constraintTop_toBottomOf="@id/btnLogin"
+        tools:ignore="VisualLintButtonSize" />
 
     <!-- Theme Toggle Icon Button (Top-Right Corner) -->
     <ImageButton
@@ -122,7 +125,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/contact_rakesh_skar_tech_gmail_com"
-            android:textColor="@color/footerText"
+            android:textColor="@color/textPrimary"
             android:textSize="12sp" />
 
     </LinearLayout>

@@ -15,8 +15,6 @@ import androidx.fragment.app.Fragment;
 
 public class SupportFragment extends Fragment {
 
-    private ImageButton btnEmailSupport;
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -26,7 +24,7 @@ public class SupportFragment extends Fragment {
         // Inflate fragment layout (without top bar)
         View view = inflater.inflate(R.layout.fragment_support, container, false);
 
-        btnEmailSupport = view.findViewById(R.id.btnEmailSupport);
+        ImageButton btnEmailSupport = view.findViewById(R.id.btnEmailSupport);
 
         btnEmailSupport.setOnClickListener(v -> openEmailSupport());
 

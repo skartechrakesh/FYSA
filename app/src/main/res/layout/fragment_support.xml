@@ -29,7 +29,7 @@
                 android:id="@+id/supportText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Need help? Reach out to us anytime."
+                android:text="@string/need_help_reach_out_to_us_anytime"
                 android:textSize="16sp"
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="12dp" />
@@ -55,9 +55,9 @@
                     android:id="@+id/supportEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Email: support@skar.com"
+                    android:text="@string/email_rakesh_skar_tech_gmail_com"
                     android:textSize="14sp"
-                    android:textColor="@color/footerText"
+                    android:textColor="@color/textPrimary"
                     android:paddingBottom="24dp" />
             </LinearLayout>
 

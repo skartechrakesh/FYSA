@@ -29,7 +29,6 @@ import java.util.List;
 public class MyBookingsFragment extends Fragment {
 
     private SwipeRefreshLayout swipeRefreshLayout;
-    private RecyclerView recyclerBookings;
     private BookingAdapter adapter;
 
     // Store both Bookings and Native Ads
@@ -55,7 +54,7 @@ public class MyBookingsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
-        recyclerBookings = view.findViewById(R.id.recyclerBookings);
+        RecyclerView recyclerBookings = view.findViewById(R.id.recyclerBookings);
         recyclerBookings.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         adapter = new BookingAdapter(mixedItems, BookingAdapter.Mode.USER, this::cancelBooking);

@@ -14,8 +14,6 @@ import com.google.firebase.auth.FirebaseAuth;
 
 public class SettingsFragment extends Fragment {
 
-    private static final String USER_PREFS = "user_prefs";
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,

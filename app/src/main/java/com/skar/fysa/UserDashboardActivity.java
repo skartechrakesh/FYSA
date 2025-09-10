@@ -257,9 +257,4 @@ public class UserDashboardActivity extends AppCompatActivity {
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
     }
 
-    public void navigateToDefaultFragment() {
-        if (bottomNavigationView != null) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
-        }
-    }
 }

@@ -29,11 +29,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
-                android:text="Hostel"
+                android:text="@string/hostel"
                 android:textColor="@color/btnOutlineText"
                 app:icon="@drawable/ic_add_space"
                 app:iconTint="@color/btnOutlineText"
-                app:strokeColor="@color/linkText" />
+                app:strokeColor="@color/linkText"
+                tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnPg"
@@ -41,11 +42,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
-                android:text="PG"
+                android:text="@string/pg"
                 android:textColor="@color/btnOutlineText"
                 app:icon="@drawable/ic_add_space"
                 app:iconTint="@color/btnOutlineText"
-                app:strokeColor="@color/linkText" />
+                app:strokeColor="@color/linkText"
+                tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnBachelorRoom"
@@ -53,11 +55,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
-                android:text="Bachelor Room"
+                android:text="@string/bachelor_room"
                 android:textColor="@color/btnOutlineText"
                 app:icon="@drawable/ic_add_space"
                 app:iconTint="@color/btnOutlineText"
-                app:strokeColor="@color/linkText" />
+                app:strokeColor="@color/linkText"
+                tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnIndividualHouse"
@@ -65,11 +68,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
-                android:text="Individual House"
+                android:text="@string/individual_house"
                 android:textColor="@color/btnOutlineText"
                 app:icon="@drawable/ic_add_space"
                 app:iconTint="@color/btnOutlineText"
-                app:strokeColor="@color/linkText" />
+                app:strokeColor="@color/linkText"
+                tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnFlat"
@@ -77,11 +81,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:layout_marginBottom="16dp"
-                android:text="Flat"
+                android:text="@string/flat"
                 android:textColor="@color/btnOutlineText"
                 app:icon="@drawable/ic_add_space"
                 app:iconTint="@color/btnOutlineText"
-                app:strokeColor="@color/linkText" />
+                app:strokeColor="@color/linkText"
+                tools:ignore="VisualLintButtonSize" />
 
         </LinearLayout>
     </ScrollView>

@@ -37,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Account &amp; Security"
+                    android:text="@string/account_amp_security"
                     android:textSize="16sp"
                     android:textColor="@color/textPrimary" />
 
@@ -45,7 +45,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="Account &amp; Security"
+                    android:contentDescription="@string/account_amp_security"
                     app:tint="@color/textSecondary" />
             </LinearLayout>
 
@@ -63,7 +63,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Privacy Policy"
+                    android:text="@string/privacy_policy"
                     android:textSize="16sp"
                     android:textColor="@color/textPrimary" />
 
@@ -71,7 +71,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="Privacy &amp; Policy"
+                    android:contentDescription="@string/privacy_policy"
                     app:tint="@color/textSecondary" />
             </LinearLayout>
 
@@ -89,7 +89,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="FAQ's"
+                    android:text="@string/faq_s"
                     android:textSize="16sp"
                     android:textColor="@color/textPrimary" />
 
@@ -97,7 +97,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="FAQ's"
+                    android:contentDescription="@string/faqs"
                     app:tint="@color/textSecondary" />
             </LinearLayout>
 
@@ -115,7 +115,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Help &amp; Support"
+                    android:text="@string/help_amp_support"
                     android:textSize="16sp"
                     android:textColor="@color/textPrimary" />
 
@@ -123,7 +123,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="Help &amp; Support"
+                    android:contentDescription="@string/help_amp_support"
                     app:tint="@color/textSecondary" />
             </LinearLayout>
 
@@ -141,7 +141,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="About App"
+                    android:text="@string/about_app"
                     android:textSize="16sp"
                     android:textColor="@color/textPrimary" />
 
@@ -149,7 +149,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="About App"
+                    android:contentDescription="@string/about_app"
                     app:tint="@color/textSecondary" />
             </LinearLayout>
 
@@ -166,9 +166,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Logout"
+                    android:text="@string/logout"
                     android:textSize="16sp"
-                    android:textColor="@color/red_500"
+                    android:textColor="@color/red_800"
                     android:layout_gravity="center_vertical" />
             </LinearLayout>
 

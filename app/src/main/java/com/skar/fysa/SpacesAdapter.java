@@ -1,5 +1,6 @@
 package com.skar.fysa;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,15 +12,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * RecyclerView Adapter for displaying Space objects (Hostel, PG, Room, House, Flat).
  */
 public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
 
-    /**
-     * Click listener interface to handle space item clicks.
-     */
     public interface OnSpaceClick {
         void onClick(Space space);
     }
@@ -34,9 +33,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
         this.onSpaceClick = onSpaceClick;
     }
 
-    /**
-     * Updates the list of items and refreshes the adapter.
-     */
     public void submitList(List<Space> newItems) {
         items.clear();
         if (newItems != null) {
@@ -58,35 +54,59 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
         Space s = items.get(position);
         if (s == null) return;
 
+        Context ctx = holder.itemView.getContext();
+
         // Name
-        holder.tvName.setText(s.getName() != null ? s.getName() : "Unnamed");
+        holder.tvName.setText(
+                s.getName() != null ? s.getName() : ctx.getString(R.string.unnamed)
+        );
 
         // Type
-        holder.tvType.setText(s.getType() != null ? s.getType() : "Unknown");
+        holder.tvType.setText(
+                s.getType() != null ? s.getType() : ctx.getString(R.string.unknown)
+        );
 
         // Owner
-        holder.tvOwner.setText(s.getOwnerName() != null ? "Owner: " + s.getOwnerName() : "Owner: N/A");
+        holder.tvOwner.setText(
+                s.getOwnerName() != null
+                        ? ctx.getString(R.string.owner_label, s.getOwnerName())
+                        : ctx.getString(R.string.owner_not_available)
+        );
 
         // Address
-        holder.tvAddress.setText(s.getAddress() != null ? "Address: " + s.getAddress() : "Address: N/A");
+        holder.tvAddress.setText(
+                s.getAddress() != null
+                        ? ctx.getString(R.string.address_label, s.getAddress())
+                        : ctx.getString(R.string.address_not_available)
+        );
 
         // Contact
-        holder.tvContact.setText(s.getContact() != null ? "Contact: " + s.getContact() : "Contact: N/A");
+        holder.tvContact.setText(
+                s.getContact() != null
+                        ? ctx.getString(R.string.contact_label, s.getContact())
+                        : ctx.getString(R.string.contact_not_available)
+        );
 
         // Vacancy
-        holder.tvVacancy.setText(Boolean.TRUE.equals(s.isVacancy()) ? "Vacancy: Available" : "Vacancy: Not Available");
+        holder.tvVacancy.setText(Boolean.TRUE.equals(s.isVacancy())
+                ? ctx.getString(R.string.vacancy_available2)
+                : ctx.getString(R.string.vacancy_not_available));
 
         // Distance (m or km)
         Integer distance = s.getDistanceMeters();
         if (distance != null && distance > 0) {
             if (distance >= 1000) {
                 double km = distance / 1000.0;
-                holder.tvDistance.setText(String.format("%.1f km away", km));
+                holder.tvDistance.setText(
+                        String.format(Locale.getDefault(), "%.1f km away", km)
+                );
             } else {
-                holder.tvDistance.setText(distance + " m away");
+                holder.tvDistance.setText(
+                        ctx.getString(R.string.distance_meters_away, distance)
+                );
             }
         } else {
-            holder.tvDistance.setText("Distance unknown");
+            holder.tvDistance.setText(ctx.getString(R.string.distance_unknown));
         }
 
         // Click listener
@@ -103,7 +123,7 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
     /**
      * ViewHolder for a Space card item.
      */
-    static class SpaceVH extends RecyclerView.ViewHolder {
+    public static class SpaceVH extends RecyclerView.ViewHolder {
         CardView card;
         TextView tvName, tvType, tvOwner, tvAddress, tvContact, tvDistance, tvVacancy;
 

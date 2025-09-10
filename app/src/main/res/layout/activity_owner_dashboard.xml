@@ -34,7 +34,8 @@
                 android:padding="8dp"
                 android:scaleType="centerInside"
                 app:srcCompat="@android:drawable/ic_menu_sort_by_size"
-                app:tint="@color/PeterRiver" />
+                app:tint="@color/BelizeHole"
+                tools:ignore="ImageContrastCheck" />
 
             <TextView
                 android:id="@+id/tvAppName"
@@ -116,7 +117,9 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:menu="@menu/menu_owner_bottom_nav" />
+            android:background="@color/appBarColor"
+            app:menu="@menu/menu_owner_bottom_nav"
+            tools:ignore="VisualLintBottomNav" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -129,5 +132,6 @@
         app:headerLayout="@layout/nav_header_owner"
         app:itemIconTint="@color/red_800"
         app:itemTextColor="@color/textPrimary"
-        app:menu="@menu/menu_owner_drawer" />
+        app:menu="@menu/menu_owner_drawer"
+        tools:ignore="VisualLintBounds" />
 </androidx.drawerlayout.widget.DrawerLayout>

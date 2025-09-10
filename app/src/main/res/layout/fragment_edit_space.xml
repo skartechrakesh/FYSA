@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="12dp"
-            android:text="Edit Space"
+            android:text="@string/edit_space"
             android:textColor="@color/textPrimary"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -32,7 +32,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Name"
+            android:hint="@string/Space_Name"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -42,7 +42,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"/>
+                android:textColorHint="@color/textSecondary"
+                tools:ignore="TextContrastCheck,TouchTargetSizeCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Owner Name ===== -->
@@ -52,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Owner Name"
+            android:hint="@string/owner_name"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -63,7 +64,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"/>
+                android:textColorHint="@color/textSecondary"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Contact Number ===== -->
@@ -73,7 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Contact Number"
+            android:hint="@string/contact_number"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -84,7 +86,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="phone"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"/>
+                android:textColorHint="@color/textSecondary"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Address ===== -->
@@ -94,7 +97,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Address"
+            android:hint="@string/address"
             app:boxBackgroundMode="outline"
             app:boxStrokeColor="@color/linkText"
             app:hintTextColor="@color/textSecondary">
@@ -107,7 +110,8 @@
                 android:inputType="textMultiLine"
                 android:minLines="2"
                 android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"/>
+                android:textColorHint="@color/textSecondary"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Category Spinner ===== -->
@@ -119,7 +123,7 @@
             android:dropDownWidth="match_parent"
             android:dropDownHeight="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="Select Category"
+            android:hint="@string/select_category"
             app:boxStrokeColor="@color/linkText"
             app:boxStrokeWidth="2dp"
             app:boxBackgroundMode="outline"
@@ -138,7 +142,7 @@
                 android:singleLine="true"
                 android:textColor="@color/textPrimary"
                 android:textSize="16sp"
-                tools:ignore="SpeakableTextPresentCheck" />
+                tools:ignore="SpeakableTextPresentCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- ===== Map Section ===== -->
@@ -163,6 +167,7 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_centerInParent="true"
+                    android:contentDescription="@string/crosshair"
                     android:src="@drawable/ic_crosshair"
                     app:tint="@android:color/holo_red_dark" />
 
@@ -173,7 +178,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
                     android:layout_margin="16dp"
-                    android:contentDescription="My Location"
+                    android:contentDescription="@string/my_location"
                     android:src="@drawable/ic_my_location"
                     app:backgroundTint="@color/linkText" />
             </RelativeLayout>
@@ -186,8 +191,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Save Changes"
-            app:cornerRadius="8dp" />
+            android:backgroundTint="@color/btnSecondary"
+            android:text="@string/save_changes"
+            android:textColor="@color/textPrimary"
+            app:cornerRadius="8dp"
+            tools:ignore="TouchTargetSizeCheck,TextContrastCheck,VisualLintButtonSize" />
 
     </LinearLayout>
 </ScrollView>

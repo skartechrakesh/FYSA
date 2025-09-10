@@ -1,5 +1,6 @@
 package com.skar.fysa;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
@@ -36,14 +38,6 @@ public class SpaceDetailsFragment extends Fragment {
 
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
-    public static SpaceDetailsFragment newInstance(Space space) {
-        SpaceDetailsFragment fragment = new SpaceDetailsFragment();
-        Bundle args = new Bundle();
-        args.putSerializable("space", space);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Nullable
     @Override
@@ -72,6 +66,7 @@ public class SpaceDetailsFragment extends Fragment {
         return view;
     }
 
+    @SuppressLint("SetTextI18n")
     private void loadSpace() {
         spaceId = space.getId();
         spaceName = space.getName();
@@ -191,7 +186,7 @@ public class SpaceDetailsFragment extends Fragment {
                                     "Visit booked successfully!", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(requireContext(),
-                                    "Booking failed: " + task.getException().getMessage(),
+                                    "Booking failed: " + Objects.requireNonNull(task.getException()).getMessage(),
                                     Toast.LENGTH_LONG).show();
                         }
                     });

@@ -5,12 +5,12 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
-import android.os.Build;
 import android.view.View;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -98,16 +98,12 @@ public class FysaApp extends Application {
     public static void setStatusBarColor(Activity activity) {
         if (activity == null) return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            int color = activity.getResources().getColor(R.color.bgColor);
-            activity.getWindow().setStatusBarColor(color);
+        int color = ContextCompat.getColor(activity, R.color.bgColor);
+        activity.getWindow().setStatusBarColor(color);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                View decor = activity.getWindow().getDecorView();
-                boolean isDarkMode = isDarkModeEnabled(activity);
-                decor.setSystemUiVisibility(!isDarkMode ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0);
-            }
-        }
+        View decor = activity.getWindow().getDecorView();
+        boolean isDarkMode = isDarkModeEnabled(activity);
+        decor.setSystemUiVisibility(!isDarkMode ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0);
     }
 
     // ---------------- INPUT FIELD STYLING ----------------
@@ -115,8 +111,8 @@ public class FysaApp extends Application {
     public static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
         if (context == null || inputs == null) return;
 
-        int focusedColor = context.getResources().getColor(R.color.stroke_focused);
-        int unfocusedColor = context.getResources().getColor(R.color.stroke_unfocused);
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
 
         for (TextInputLayout input : inputs) {
             if (input == null) continue;

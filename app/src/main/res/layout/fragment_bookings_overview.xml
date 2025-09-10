@@ -31,7 +31,7 @@
         android:id="@+id/bookingsListTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bookings List"
+        android:text="@string/bookings_list"
         android:textColor="@color/textPrimary"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -43,7 +43,7 @@
     <!-- Scrollable Bookings List -->
     <ScrollView
         android:id="@+id/scrollContent"
-        android:contentDescription="Scroll content"
+        android:contentDescription="@string/scroll_content"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"

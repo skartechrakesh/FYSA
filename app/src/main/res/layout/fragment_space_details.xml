@@ -26,7 +26,7 @@
                 android:id="@+id/tvName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Space Name"
+                android:text="@string/Space_Name"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/textPrimary"
@@ -37,7 +37,7 @@
                 android:id="@+id/tvType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Type"
+                android:text="@string/type"
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="4dp"/>
 
@@ -46,7 +46,7 @@
                 android:id="@+id/tvOwnerName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Owner: John Doe"
+                android:text=""
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="4dp"/>
 
@@ -55,7 +55,7 @@
                 android:id="@+id/tvAddress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Address: 123 Main Street"
+                android:text=""
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="4dp"/>
 
@@ -64,7 +64,7 @@
                 android:id="@+id/tvContact"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Contact: +91 9876543210"
+                android:text=""
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="4dp"/>
 
@@ -73,7 +73,7 @@
                 android:id="@+id/tvDistance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Distance"
+                android:text=""
                 android:textColor="@color/textPrimary"
                 android:paddingBottom="12dp"/>
 
@@ -82,16 +82,20 @@
                 android:id="@+id/btnDirections"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/btnTextPrimary"
-                android:text="Get Directions in Google Maps" />
+                android:textColor="@color/textPrimary"
+                android:backgroundTint="@color/btnSecondary"
+                android:text="@string/get_directions_in_google_maps"
+                tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnBook"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Book Visit"
-                android:textColor="@color/btnTextPrimary"
-                android:layout_marginTop="12dp"/>
+                android:text="@string/book_visit"
+                android:textColor="@color/textPrimary"
+                android:backgroundTint="@color/light_green_500"
+                android:layout_marginTop="12dp"
+                tools:ignore="VisualLintButtonSize" />
 
         </LinearLayout>
     </ScrollView>

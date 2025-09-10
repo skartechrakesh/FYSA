@@ -34,7 +34,7 @@
         android:id="@+id/tvCreatedAt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Created At: "
+        android:text="@string/created_at"
         android:textSize="14sp"
         android:visibility="gone"
         android:layout_marginTop="4dp"/>
@@ -49,10 +49,10 @@
     <!-- Cancel Visit Button -->
     <Button
         android:id="@+id/btnAction"
-        android:text="Cancel Visit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:backgroundTint="@color/btnSecondary"
-        android:textColor="@color/btnTextPrimary"/>
+        android:text="@string/cancel_visit"
+        android:textColor="@color/textPrimary" />
 </LinearLayout>

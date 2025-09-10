@@ -22,7 +22,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthCredential;
@@ -36,27 +35,24 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+@SuppressWarnings("deprecation") // Suppresses GoogleSignInAccount and related warnings
 public class LoginActivity extends AppCompatActivity {
 
     private ImageButton btnThemeToggle;
     private Button btnLoginSubmit;
-    private TextView linkRegister, linkForgotPassword;
     private ProgressBar progressBar;
     private TextInputLayout emailLayout, passwordLayout;
-    private SignInButton btnGoogleSignIn;
 
     private FirebaseAuth auth;
     private DatabaseReference usersRef;
     private GoogleSignInClient googleSignInClient;
 
-    private final String FIREBASE_DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private final ActivityResultLauncher<Intent> googleSignInLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                            Task<GoogleSignInAccount> task =
+                                    GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                             try {
                                 GoogleSignInAccount account = task.getResult(ApiException.class);
                                 if (account != null) firebaseAuthWithGoogle(account.getIdToken());
@@ -79,14 +75,15 @@ public class LoginActivity extends AppCompatActivity {
 
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         btnLoginSubmit = findViewById(R.id.btnLoginSubmit);
-        linkRegister = findViewById(R.id.linkRegister);
-        linkForgotPassword = findViewById(R.id.linkForgotPassword);
+        TextView linkRegister = findViewById(R.id.linkRegister);
+        TextView linkForgotPassword = findViewById(R.id.linkForgotPassword);
         progressBar = findViewById(R.id.progressBar);
         emailLayout = findViewById(R.id.emailLayout);
         passwordLayout = findViewById(R.id.passwordLayout);
-        btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
+        SignInButton btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
 
         auth = FirebaseAuth.getInstance();
+        String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
         usersRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference("users");
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -180,8 +177,6 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-
-
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         auth.signInWithCredential(credential)
@@ -199,6 +194,7 @@ public class LoginActivity extends AppCompatActivity {
                                     showSnackbar("Please register first with this account.");
                                 }
                             }
+
                             @Override
                             public void onCancelled(@NonNull DatabaseError error) {
                                 setLoading(false);
@@ -257,6 +253,7 @@ public class LoginActivity extends AppCompatActivity {
                     showSnackbar("User not found in database.");
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 setLoading(false);

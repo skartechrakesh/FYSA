@@ -14,8 +14,8 @@
             android:id="@+id/tvAppName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="App Name"
-            android:textColor="@color/linkText"
+            android:text="@string/app_name"
+            android:textColor="#2183F3"
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"/>
@@ -24,8 +24,8 @@
             android:id="@+id/tvTitleDescription"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="(Title Description)"
-            android:textColor="@color/linkText"
+            android:text="@string/app_tagline"
+            android:textColor="#0368DC"
             android:textSize="13sp"
             android:layout_marginBottom="8dp"/>
 
@@ -33,8 +33,8 @@
             android:id="@+id/tvVersion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Version"
-            android:textColor="@color/red_500"
+            android:text="@string/version"
+            android:textColor="@color/red_800"
             android:textSize="16sp"
             android:layout_marginBottom="8dp"/>
 
@@ -42,7 +42,7 @@
             android:id="@+id/tvDeveloper"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Developer"
+            android:text="@string/developer"
             android:textColor="@color/textPrimary"
             android:textSize="16sp"
             android:layout_marginBottom="16dp"/>
@@ -51,7 +51,7 @@
             android:id="@+id/tvDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="App Description"
+            android:text="@string/app_description"
             android:textColor="@color/textPrimary"
             android:textSize="16sp"
             android:lineSpacingExtra="2dp"/>
