@@ -91,10 +91,22 @@
             android:id="@+id/fragmentContainer"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvWelcome"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvWelcome" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/adViewBanner" />
+
+        <!-- Banner Ad -->
+        <com.google.android.gms.ads.AdView
+            android:id="@+id/adViewBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:adSize="BANNER"
+            app:adUnitId="ca-app-pub-3940256099942544/6300978111" /> <!-- Replace with your Ad Unit ID -->
 
         <!-- Bottom Navigation -->
         <com.google.android.material.bottomnavigation.BottomNavigationView

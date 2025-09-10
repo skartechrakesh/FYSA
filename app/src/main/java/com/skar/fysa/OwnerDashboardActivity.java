@@ -14,6 +14,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -25,14 +27,15 @@ import com.google.firebase.database.FirebaseDatabase;
 public class OwnerDashboardActivity extends AppCompatActivity {
 
     private static final String KEY_USERNAME = "username";
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
     private TextView tvWelcome, drawerUserName;
     private long backPressedTime = 0;
+
+    private AdView adViewBanner; // Banner Ad
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,8 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         loadUsernameFromDatabase();
         setupBackPressHandler();
 
+        setupBannerAd(); // Initialize banner
+
         if (savedInstanceState == null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
         }
@@ -62,6 +67,13 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         tvWelcome = findViewById(R.id.tvWelcome);
         drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvOwnerName);
+
+        adViewBanner = findViewById(R.id.adViewBanner); // Link AdView
+    }
+
+    private void setupBannerAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adViewBanner.loadAd(adRequest);
     }
 
     private void setupTopBar() {
@@ -69,9 +81,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> showLogoutSnackbar());
 
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-        btnThemeToggle.setOnClickListener(v ->
-                FysaApp.toggleThemeWithAnimation(OwnerDashboardActivity.this, btnThemeToggle)
-        );
+        btnThemeToggle.setOnClickListener(v -> FysaApp.toggleThemeWithAnimation(OwnerDashboardActivity.this, btnThemeToggle));
     }
 
     private void setupDrawerActions() {
@@ -115,8 +125,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 return true;
             }
 
-            if (fragment != null && itemId != R.id.nav_contact_us
-                    && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
+            if (fragment != null && itemId != R.id.nav_contact_us && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
                 replaceFragment(fragment);
             }
 
@@ -189,8 +198,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users").child(user.getUid());
+        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL).getReference("users").child(user.getUid());
 
         userRef.child("name").get().addOnCompleteListener(task -> {
             String displayName = "User";
@@ -216,37 +224,36 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     }
 
     private void setupBackPressHandler() {
-        getOnBackPressedDispatcher().addCallback(this,
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                            drawerLayout.closeDrawer(GravityCompat.START);
-                            return;
-                        }
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                    return;
+                }
 
-                        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                            getSupportFragmentManager().popBackStack();
-                            return;
-                        }
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                    return;
+                }
 
-                        if (bottomNavigationView.getSelectedItemId() != R.id.nav_add_new_space) {
-                            bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
-                            return;
-                        }
+                if (bottomNavigationView.getSelectedItemId() != R.id.nav_add_new_space) {
+                    bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
+                    return;
+                }
 
-                        if (backPressedTime + 2000 > System.currentTimeMillis()) {
-                            finish();
-                        } else {
-                            Snackbar snackbar = Snackbar.make(drawerLayout, "Press back again to exit", Snackbar.LENGTH_SHORT)
-                                    .setAnchorView(bottomNavigationView);
-                            snackbar.setBackgroundTint(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.blue_400));
-                            snackbar.setTextColor(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.black));
-                            snackbar.show();
-                        }
-                        backPressedTime = System.currentTimeMillis();
-                    }
-                });
+                if (backPressedTime + 2000 > System.currentTimeMillis()) {
+                    finish();
+                } else {
+                    Snackbar snackbar = Snackbar.make(drawerLayout, "Press back again to exit", Snackbar.LENGTH_SHORT)
+                            .setAnchorView(bottomNavigationView);
+                    snackbar.setBackgroundTint(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.blue_400));
+                    snackbar.setTextColor(ContextCompat.getColor(OwnerDashboardActivity.this, R.color.black));
+                    snackbar.show();
+                }
+                backPressedTime = System.currentTimeMillis();
+            }
+        });
     }
 
     @Override
@@ -255,11 +262,5 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         FysaApp.applySavedTheme();
         FysaApp.setStatusBarColor(this);
         FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-    }
-
-    public void navigateToDefaultFragment() {
-        if (bottomNavigationView != null) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
-        }
     }
 }

@@ -1,6 +1,7 @@
 package com.skar.fysa;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -10,6 +11,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdLoader;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -25,6 +31,9 @@ public class MyBookingsFragment extends Fragment {
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerBookings;
     private BookingAdapter adapter;
+
+    // Store both Bookings and Native Ads
+    private final List<Object> mixedItems = new ArrayList<>();
     private final List<Booking> bookingList = new ArrayList<>();
 
     private static final String DB_URL =
@@ -32,6 +41,9 @@ public class MyBookingsFragment extends Fragment {
 
     private DatabaseReference notificationsRef;
     private ValueEventListener notificationsListener;
+
+    private static final String NATIVE_AD_UNIT_ID =
+            "ca-app-pub-3940256099942544/2247696110"; // Test Ad Unit ID
 
     public MyBookingsFragment() {
         super(R.layout.fragment_my_bookings);
@@ -46,11 +58,13 @@ public class MyBookingsFragment extends Fragment {
         recyclerBookings = view.findViewById(R.id.recyclerBookings);
         recyclerBookings.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        adapter = new BookingAdapter(bookingList, BookingAdapter.Mode.USER, this::cancelBooking);
+        adapter = new BookingAdapter(mixedItems, BookingAdapter.Mode.USER, this::cancelBooking);
         recyclerBookings.setAdapter(adapter);
 
         swipeRefreshLayout.setOnRefreshListener(this::loadBookingsFromFirebase);
 
+        // Initialize AdMob
+        MobileAds.initialize(requireContext(), initializationStatus -> {});
         swipeRefreshLayout.setRefreshing(true);
         loadBookingsFromFirebase();
     }
@@ -76,12 +90,12 @@ public class MyBookingsFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 bookingList.clear();
+                mixedItems.clear();
 
                 for (DataSnapshot ownerSnapshot : snapshot.getChildren()) {
                     for (DataSnapshot notificationSnap : ownerSnapshot.getChildren()) {
                         NotificationModel notification = notificationSnap.getValue(NotificationModel.class);
                         if (notification != null && notification.getUserId().equals(currentUserId)) {
-                            // Convert NotificationModel to Booking object for the adapter
                             Booking booking = new Booking(
                                     notificationSnap.getKey(),
                                     notification.getUserId(),
@@ -99,13 +113,13 @@ public class MyBookingsFragment extends Fragment {
                     }
                 }
 
-                adapter.notifyDataSetChanged();
-                swipeRefreshLayout.setRefreshing(false);
-
                 if (bookingList.isEmpty()) {
                     Toast.makeText(requireContext(),
                             "No bookings found", Toast.LENGTH_SHORT).show();
                 }
+
+                insertBookingsWithAds();
+                swipeRefreshLayout.setRefreshing(false);
             }
 
             @Override
@@ -122,6 +136,41 @@ public class MyBookingsFragment extends Fragment {
         notificationsRef.addValueEventListener(notificationsListener);
     }
 
+    private void insertBookingsWithAds() {
+        mixedItems.clear();
+
+        for (int i = 0; i < bookingList.size(); i++) {
+            mixedItems.add(bookingList.get(i));
+
+            // Insert a native ad after every 3 bookings
+            if ((i + 1) % 3 == 0) {
+                int adPosition = mixedItems.size();
+                loadNativeAdAt(adPosition);
+            }
+        }
+
+        adapter.notifyDataSetChanged();
+    }
+
+    private void loadNativeAdAt(int position) {
+        AdLoader adLoader = new AdLoader.Builder(requireContext(), NATIVE_AD_UNIT_ID)
+                .forNativeAd(nativeAd -> {
+                    if (position <= mixedItems.size()) {
+                        mixedItems.add(position, nativeAd);
+                        adapter.notifyItemInserted(position);
+                    }
+                })
+                .withAdListener(new AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError adError) {
+                        Log.e("MyBookingsFragment", "Failed to load native ad: " + adError.getMessage());
+                    }
+                })
+                .build();
+
+        adLoader.loadAd(new AdRequest.Builder().build());
+    }
+
     private void cancelBooking(Booking booking) {
         if (FirebaseAuth.getInstance().getCurrentUser() == null || booking == null) return;
 
@@ -136,6 +185,7 @@ public class MyBookingsFragment extends Fragment {
         notificationRef.removeValue().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 bookingList.remove(booking);
+                mixedItems.remove(booking);
                 adapter.notifyDataSetChanged();
                 Toast.makeText(requireContext(),
                         "Booking cancelled successfully", Toast.LENGTH_SHORT).show();
@@ -152,6 +202,13 @@ public class MyBookingsFragment extends Fragment {
         super.onDestroyView();
         if (notificationsRef != null && notificationsListener != null) {
             notificationsRef.removeEventListener(notificationsListener);
+        }
+
+        // Destroy native ads when fragment is destroyed
+        for (Object item : mixedItems) {
+            if (item instanceof NativeAd) {
+                ((NativeAd) item).destroy();
+            }
         }
     }
 }

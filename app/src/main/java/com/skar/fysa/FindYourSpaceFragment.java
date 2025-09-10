@@ -8,8 +8,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -18,6 +21,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdLoader;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -32,8 +41,9 @@ import java.util.List;
 public class FindYourSpaceFragment extends Fragment {
 
     private static final int LOCATION_PERMISSION_REQUEST = 1001;
-    private static final double MAX_DISTANCE_METERS = 5000; // 5 km
+    private static final double MAX_DISTANCE_METERS = 5000;
     private static final String TAG = "FindYourSpaceFragment";
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test ad
 
     private RecyclerView recyclerView;
     private SpacesAdapter adapter;
@@ -42,6 +52,8 @@ public class FindYourSpaceFragment extends Fragment {
 
     private CheckBox cbHostel, cbPG, cbRoom, cbHouse, cbFlat;
     private SwipeRefreshLayout swipeRefresh;
+    private NativeAdView nativeAdView;
+    private NativeAd loadedNativeAd;
 
     private final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
@@ -74,10 +86,12 @@ public class FindYourSpaceFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         cbHostel = view.findViewById(R.id.cbHostel);
-        cbPG     = view.findViewById(R.id.cbPG);
-        cbRoom   = view.findViewById(R.id.cbRoom);
-        cbHouse  = view.findViewById(R.id.cbHouse);
-        cbFlat   = view.findViewById(R.id.cbFlat);
+        cbPG = view.findViewById(R.id.cbPG);
+        cbRoom = view.findViewById(R.id.cbRoom);
+        cbHouse = view.findViewById(R.id.cbHouse);
+        cbFlat = view.findViewById(R.id.cbFlat);
+
+        nativeAdView = view.findViewById(R.id.native_ad_view);
 
         View.OnClickListener filterListener = v -> reloadForCurrentFilters();
         cbHostel.setOnClickListener(filterListener);
@@ -85,6 +99,8 @@ public class FindYourSpaceFragment extends Fragment {
         cbRoom.setOnClickListener(filterListener);
         cbHouse.setOnClickListener(filterListener);
         cbFlat.setOnClickListener(filterListener);
+
+        MobileAds.initialize(requireContext(), initializationStatus -> loadNativeAd());
 
         checkLocationAndLoad();
 
@@ -153,10 +169,10 @@ public class FindYourSpaceFragment extends Fragment {
     private List<String> getSelectedCategories() {
         List<String> res = new ArrayList<>();
         if (cbHostel != null && cbHostel.isChecked()) res.add("Hostel");
-        if (cbPG     != null && cbPG.isChecked())     res.add("PG");
-        if (cbRoom   != null && cbRoom.isChecked())   res.add("Room");
-        if (cbHouse  != null && cbHouse.isChecked())  res.add("House");
-        if (cbFlat   != null && cbFlat.isChecked())   res.add("Flat");
+        if (cbPG != null && cbPG.isChecked()) res.add("PG");
+        if (cbRoom != null && cbRoom.isChecked()) res.add("Room");
+        if (cbHouse != null && cbHouse.isChecked()) res.add("House");
+        if (cbFlat != null && cbFlat.isChecked()) res.add("Flat");
         return res;
     }
 
@@ -173,13 +189,8 @@ public class FindYourSpaceFragment extends Fragment {
                         Space space = spaceSnapshot.getValue(Space.class);
                         if (space == null) continue;
 
-                        // ✅ Only load spaces with vacancy == true
-                        if (!Boolean.TRUE.equals(space.isVacancy())) {
-                            continue;
-                        }
-
-                        if (!spaceSnapshot.hasChild("latitude") || !spaceSnapshot.hasChild("longitude"))
-                            continue;
+                        if (!Boolean.TRUE.equals(space.isVacancy())) continue;
+                        if (!spaceSnapshot.hasChild("latitude") || !spaceSnapshot.hasChild("longitude")) continue;
 
                         if (space.getId() == null || space.getId().isEmpty()) {
                             space.setId(spaceSnapshot.getKey());
@@ -208,7 +219,6 @@ public class FindYourSpaceFragment extends Fragment {
 
                     remaining[0]--;
                     if (remaining[0] == 0) {
-                        // ✅ Sort by distance if available
                         Collections.sort(merged, Comparator.comparingInt(space ->
                                 space.getDistanceMeters() != null ? space.getDistanceMeters() : Integer.MAX_VALUE
                         ));
@@ -235,5 +245,53 @@ public class FindYourSpaceFragment extends Fragment {
                 }
             });
         }
+    }
+
+    private void loadNativeAd() {
+        AdLoader adLoader = new AdLoader.Builder(requireContext(), NATIVE_AD_UNIT_ID)
+                .forNativeAd(nativeAd -> {
+                    if (loadedNativeAd != null) loadedNativeAd.destroy();
+                    loadedNativeAd = nativeAd;
+
+                    nativeAdView.setVisibility(View.VISIBLE);
+                    populateNativeAdView(nativeAd, nativeAdView);
+                })
+                .withAdListener(new AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError adError) {
+                        Log.e(TAG, "Failed to load top native ad: " + adError.getMessage());
+                        nativeAdView.setVisibility(View.GONE);
+                    }
+                })
+                .build();
+
+        adLoader.loadAd(new AdRequest.Builder().build());
+    }
+
+    private void populateNativeAdView(NativeAd nativeAd, NativeAdView adView) {
+        // Set headline
+        TextView headline = adView.findViewById(R.id.ad_headline);
+        headline.setText(nativeAd.getHeadline());
+
+        // Set body
+        TextView body = adView.findViewById(R.id.ad_body);
+        body.setText(nativeAd.getBody());
+
+        // Set call to action
+        Button cta = adView.findViewById(R.id.ad_call_to_action);
+        cta.setText(nativeAd.getCallToAction());
+
+        // Register ad assets
+        adView.setHeadlineView(headline);
+        adView.setBodyView(body);
+        adView.setCallToActionView(cta);
+
+        adView.setNativeAd(nativeAd);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (loadedNativeAd != null) loadedNativeAd.destroy();
     }
 }
