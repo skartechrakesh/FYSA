@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,8 +24,14 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -42,11 +49,15 @@ public class SpaceFormFragment extends Fragment {
     private Button btnSubmit;
     private MapView mapView;
     private TextView txtCategory;
+    private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
     private FloatingActionButton btnMyLocation;
     private ImageView crosshair;
 
     private DatabaseReference userSpacesRef, globalSpacesRef;
     private String category;
+
+    private InterstitialAd mInterstitialAd; // Interstitial Ad
+    private final Handler adHandler = new Handler();
 
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
@@ -90,6 +101,10 @@ public class SpaceFormFragment extends Fragment {
         requestLocationPermission();
 
         txtCategory.setText("Category: " + category);
+        FysaApp.setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
+
+        // Load interstitial ad
+        loadInterstitialAd();
 
         return view;
     }
@@ -104,24 +119,49 @@ public class SpaceFormFragment extends Fragment {
         txtCategory = view.findViewById(R.id.txtCategory);
         btnMyLocation = view.findViewById(R.id.btnMyLocation);
         crosshair = view.findViewById(R.id.crosshair);
+        nameLayout = view.findViewById(R.id.nameLayout);
+        ownerNameLayout = view.findViewById(R.id.ownerNameLayout);
+        contactLayout = view.findViewById(R.id.contactLayout);
+        addressLayout = view.findViewById(R.id.addressLayout);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
-        btnSubmit.setOnClickListener(v -> submitForm());
+
+        btnSubmit.setOnClickListener(v -> {
+            // Show interstitial after 1000 ms, then submit form
+            adHandler.postDelayed(() -> {
+                if (mInterstitialAd != null) {
+                    mInterstitialAd.show(requireActivity());
+                    mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            submitForm();
+                            loadInterstitialAd(); // Load next ad
+                        }
+
+                        @Override
+                        public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                            submitForm(); // Submit even if ad fails
+                        }
+                    });
+                } else {
+                    submitForm(); // If ad not loaded, submit immediately
+                }
+            }, 1000);
+        });
 
         // Smooth map dragging inside scrollable parent
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 v.getParent().requestDisallowInterceptTouchEvent(false);
-                v.performClick(); // accessibility safe click
+                v.performClick();
             }
             return false;
         });
 
-        // Dummy click for accessibility
         mapView.setOnClickListener(v -> {});
     }
 
@@ -202,7 +242,6 @@ public class SpaceFormFragment extends Fragment {
             return;
         }
 
-        // Build space object
         Space space = new Space(
                 spaceId,
                 name,
@@ -214,10 +253,9 @@ public class SpaceFormFragment extends Fragment {
                 address,
                 contact,
                 email,
-                true // Vacancy default = true
+                true
         );
 
-        // Save in both global and user nodes
         globalSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(globalTask -> {
             if (globalTask.isSuccessful()) {
                 userSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(userTask -> {
@@ -232,6 +270,23 @@ public class SpaceFormFragment extends Fragment {
                 Toast.makeText(getContext(), "Global save failed: " + Objects.requireNonNull(globalTask.getException()).getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void loadInterstitialAd() {
+        InterstitialAd.load(requireContext(),
+                "ca-app-pub-3940256099942544/1033173712", // Replace with your Ad Unit ID
+                new AdRequest.Builder().build(),
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        mInterstitialAd = null;
+                    }
+                });
     }
 
     @Override

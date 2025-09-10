@@ -20,6 +20,10 @@ import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.google.android.gms.ads.AdLoader;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -41,6 +45,7 @@ import java.util.Map;
 public class BookingsOverviewFragment extends Fragment {
 
     private LinearLayout bookingsListContainer;
+    private LinearLayout nativeAdContainer;
     private BarChart barChart;
     private DatabaseReference notifRef;
     private FirebaseUser currentUser;
@@ -48,9 +53,10 @@ public class BookingsOverviewFragment extends Fragment {
 
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private static final SimpleDateFormat sdf =
             new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+    private NativeAd loadedNativeAd;
 
     public BookingsOverviewFragment() {}
 
@@ -61,8 +67,12 @@ public class BookingsOverviewFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_bookings_overview, container, false);
+
         bookingsListContainer = view.findViewById(R.id.bookingsListContainer);
         barChart = view.findViewById(R.id.bookingsBarChart);
+        nativeAdContainer = view.findViewById(R.id.nativeAdContainer);
+
+        loadNativeAd();
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
@@ -77,6 +87,53 @@ public class BookingsOverviewFragment extends Fragment {
         }
 
         return view;
+    }
+
+    private void loadNativeAd() {
+        AdLoader adLoader = new AdLoader.Builder(requireContext(),
+                "ca-app-pub-3940256099942544/2247696110") // Test Ad Unit ID
+                .forNativeAd(nativeAd -> {
+                    if (getContext() == null) return;
+
+                    if (loadedNativeAd != null) loadedNativeAd.destroy();
+                    loadedNativeAd = nativeAd;
+
+                    NativeAdView adView = (NativeAdView) LayoutInflater.from(getContext())
+                            .inflate(R.layout.item_native_ad, nativeAdContainer, false);
+
+                    TextView headline = adView.findViewById(R.id.ad_headline);
+                    TextView body = adView.findViewById(R.id.ad_body);
+                    Button cta = adView.findViewById(R.id.ad_call_to_action);
+
+                    // Map views
+                    adView.setHeadlineView(headline);
+                    adView.setBodyView(body);
+                    adView.setCallToActionView(cta);
+
+                    // Populate ad
+                    headline.setText(nativeAd.getHeadline());
+                    if (nativeAd.getBody() != null) {
+                        body.setText(nativeAd.getBody());
+                        body.setVisibility(View.VISIBLE);
+                    } else {
+                        body.setVisibility(View.GONE);
+                    }
+
+                    if (nativeAd.getCallToAction() != null) {
+                        cta.setText(nativeAd.getCallToAction());
+                        cta.setVisibility(View.VISIBLE);
+                    } else {
+                        cta.setVisibility(View.GONE);
+                    }
+
+                    adView.setNativeAd(nativeAd);
+
+                    nativeAdContainer.removeAllViews();
+                    nativeAdContainer.addView(adView);
+                })
+                .build();
+
+        adLoader.loadAd(new AdRequest.Builder().build());
     }
 
     private void loadNotifications() {
@@ -106,7 +163,6 @@ public class BookingsOverviewFragment extends Fragment {
                         }
                     } catch (ParseException ignored) {}
 
-                    // Inflate row
                     View row = LayoutInflater.from(getContext())
                             .inflate(R.layout.item_booking_row, bookingsListContainer, false);
 
@@ -122,7 +178,6 @@ public class BookingsOverviewFragment extends Fragment {
                     tvDate.setText(notif.getBookingDate());
                     tvType.setText(notif.getSpaceType() != null ? notif.getSpaceType() : "N/A");
 
-                    // Show proper status and button without auto-changing
                     if (!notif.isRead()) {
                         tvStatus.setText("Visit Booked");
                         btnMarkRead.setVisibility(View.VISIBLE);
@@ -225,5 +280,6 @@ public class BookingsOverviewFragment extends Fragment {
             notifRef.removeEventListener(notifListener);
             notifListener = null;
         }
+        if (loadedNativeAd != null) loadedNativeAd.destroy();
     }
 }

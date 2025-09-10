@@ -69,81 +69,80 @@ public class BookingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof BookingViewHolder) {
-            Booking booking = (Booking) items.get(position);
-            BookingViewHolder bookingHolder = (BookingViewHolder) holder;
-
-            // Basic info
-            bookingHolder.tvBookingName.setText(booking.getSpaceName());
-            bookingHolder.tvBookingType.setText("Type: " + booking.getSpaceType());
-            bookingHolder.tvBookingDate.setText("Booking Date: " + booking.getBookingDate());
-
-            // Created at
-            if (booking.getCreatedAt() > 0) {
-                String formattedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-                        .format(new Date(booking.getCreatedAt()));
-                bookingHolder.tvCreatedAt.setText("Created At: " + formattedDate);
-                bookingHolder.tvCreatedAt.setVisibility(View.VISIBLE);
-            } else {
-                bookingHolder.tvCreatedAt.setVisibility(View.GONE);
-            }
-
-            // Status
-            bookingHolder.tvBookingStatus.setText("Status: " + booking.getStatus());
-
-            String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
-                    ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                    : null;
-
-            // OWNER MODE
-            if (mode == Mode.OWNER) {
-                if ("Booked Visit".equals(booking.getStatus())
-                        && booking.getOwnerId() != null
-                        && booking.getOwnerId().equals(currentUserId)) {
-
-                    bookingHolder.btnAction.setVisibility(View.VISIBLE);
-                    bookingHolder.btnAction.setText("Mark as Read");
-
-                    bookingHolder.btnAction.setOnClickListener(v -> {
-                        DatabaseReference statusRef = FirebaseDatabase.getInstance(DB_URL)
-                                .getReference("notifications")
-                                .child(booking.getOwnerId())
-                                .child(booking.getBookingId());
-
-                        statusRef.child("status").setValue("Visit Accepted")
-                                .addOnSuccessListener(aVoid -> {
-                                    Toast.makeText(holder.itemView.getContext(),
-                                            "Visit accepted", Toast.LENGTH_SHORT).show();
-                                    booking.setStatus("Visit Accepted");
-                                    notifyItemChanged(position);
-                                })
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(holder.itemView.getContext(),
-                                                "Failed to update status: " + e.getMessage(),
-                                                Toast.LENGTH_LONG).show());
-                    });
-
-                } else {
-                    bookingHolder.btnAction.setVisibility(View.GONE);
-                }
-
-            }
-            // USER MODE
-            else if (mode == Mode.USER) {
-                bookingHolder.btnAction.setVisibility(View.VISIBLE);
-                bookingHolder.btnAction.setText("Cancel Visit");
-
-                bookingHolder.btnAction.setOnClickListener(v -> {
-                    if (cancelListener != null) {
-                        cancelListener.onCancelClick(booking);
-                    }
-                });
-            }
-
+            bindBooking((BookingViewHolder) holder, (Booking) items.get(position), position);
         } else if (holder instanceof AdViewHolder) {
-            NativeAd nativeAd = (NativeAd) items.get(position);
-            AdViewHolder adHolder = (AdViewHolder) holder;
-            populateNativeAdView(nativeAd, adHolder.nativeAdView);
+            populateNativeAdView((NativeAd) items.get(position), ((AdViewHolder) holder).nativeAdView);
         }
+    }
+
+    private void bindBooking(BookingViewHolder holder, Booking booking, int position) {
+        holder.tvBookingName.setText(booking.getSpaceName());
+        holder.tvBookingType.setText("Type: " + booking.getSpaceType());
+        holder.tvBookingDate.setText("Booking Date: " + booking.getBookingDate());
+
+        if (booking.getCreatedAt() > 0) {
+            String formattedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+                    .format(new Date(booking.getCreatedAt()));
+            holder.tvCreatedAt.setText("Created At: " + formattedDate);
+            holder.tvCreatedAt.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvCreatedAt.setVisibility(View.GONE);
+        }
+
+        holder.tvBookingStatus.setText("Status: " + booking.getStatus());
+
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+
+        if (mode == Mode.OWNER) {
+            handleOwnerMode(holder, booking, position, currentUserId);
+        } else {
+            handleUserMode(holder, booking);
+        }
+    }
+
+    private void handleOwnerMode(BookingViewHolder holder, Booking booking, int position, String currentUserId) {
+        if ("Booked Visit".equals(booking.getStatus())
+                && booking.getOwnerId() != null
+                && booking.getOwnerId().equals(currentUserId)) {
+
+            holder.btnAction.setVisibility(View.VISIBLE);
+            holder.btnAction.setText("Mark as Read");
+
+            holder.btnAction.setOnClickListener(v -> {
+                DatabaseReference statusRef = FirebaseDatabase.getInstance(DB_URL)
+                        .getReference("notifications")
+                        .child(booking.getOwnerId())
+                        .child(booking.getBookingId());
+
+                statusRef.child("status").setValue("Visit Accepted")
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(holder.itemView.getContext(),
+                                    "Visit accepted", Toast.LENGTH_SHORT).show();
+                            booking.setStatus("Visit Accepted");
+                            notifyItemChanged(position);
+                        })
+                        .addOnFailureListener(e ->
+                                Toast.makeText(holder.itemView.getContext(),
+                                        "Failed to update status: " + e.getMessage(),
+                                        Toast.LENGTH_LONG).show());
+            });
+
+        } else {
+            holder.btnAction.setVisibility(View.GONE);
+        }
+    }
+
+    private void handleUserMode(BookingViewHolder holder, Booking booking) {
+        holder.btnAction.setVisibility(View.VISIBLE);
+        holder.btnAction.setText("Cancel Visit");
+
+        holder.btnAction.setOnClickListener(v -> {
+            if (cancelListener != null) {
+                cancelListener.onCancelClick(booking);
+            }
+        });
     }
 
     @Override
@@ -177,7 +176,7 @@ public class BookingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    // --- Helper: Populate Native Ad ---
+    // --- Populate Native Ad ---
     private void populateNativeAdView(NativeAd nativeAd, NativeAdView adView) {
         TextView headlineView = adView.findViewById(R.id.ad_headline);
         TextView bodyView = adView.findViewById(R.id.ad_body);
@@ -187,9 +186,7 @@ public class BookingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         adView.setBodyView(bodyView);
         adView.setCallToActionView(ctaView);
 
-        // Fill data
         headlineView.setText(nativeAd.getHeadline());
-
         if (nativeAd.getBody() != null) {
             bodyView.setText(nativeAd.getBody());
             bodyView.setVisibility(View.VISIBLE);
