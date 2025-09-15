@@ -1,26 +1,41 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.FYSA" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/btnPrimary</item>
-        <item name="colorPrimaryVariant">@color/btnPrimary</item>
-        <item name="colorOnPrimary">@color/btnTextPrimary</item>
-
-        <item name="colorSecondary">@color/btnSecondary</item>
-        <item name="colorSecondaryVariant">@color/btnSecondary</item>
-        <item name="colorOnSecondary">@color/btnTextSecondary</item>
-
-        <item name="android:colorBackground">@color/bgColor</item>
-        <item name="colorSurface">@color/bgColor</item>
-        <item name="colorOnSurface">@color/textPrimary</item>
-
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimary</item>
+    <style name="Base.Theme.FYSA" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/grey_100</item>
         <item name="android:windowLightStatusBar">true</item>
-
-        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
-        <item name="materialButtonOutlinedStyle">@style/Widget.MaterialComponents.Button.OutlinedButton</item>
+        <item name="splashBackground">@color/grey_50</item>
+        <item name="colorPrimary">@color/indigo_500</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/indigo_200</item>
+        <item name="colorOnPrimaryContainer">@color/indigo_900</item>
+        <item name="colorSecondary">@color/orange_500</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/black</item>
+        <item name="colorOnSecondaryContainer">@color/orange_900</item>
+        <item name="colorTertiary">@color/cyan_500</item>
+        <item name="colorOnTertiary">@color/white</item>
+        <item name="colorTertiaryContainer">@color/cyan_200</item>
+        <item name="colorOnTertiaryContainer">@color/cyan_900</item>
+        <item name="colorError">@color/red_500</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorErrorContainer">@color/red_200</item>
+        <item name="colorOnErrorContainer">@color/red_900</item>
+        <item name="android:colorBackground">@color/grey_50</item>
+        <item name="colorOnBackground">@color/grey_900</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/grey_900</item>
+        <item name="colorSurfaceVariant">@color/grey_100</item>
+        <item name="colorOnSurfaceVariant">@color/grey_700</item>
+        <item name="colorOutline">@color/grey_300</item>
+        <item name="colorOnSurfaceInverse">@color/grey_50</item>
+        <item name="colorSurfaceInverse">@color/grey_900</item>
+        <item name="colorPrimaryInverse">@color/indigo_200</item>
+        <item name="colorSuccess">@color/green_500</item>
     </style>
 
     <style name="CircleImage">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+    <style name="Theme.App.LightDialog" parent="Theme.AppCompat.Light.Dialog.Alert" />
+    <style name="Theme.FYSA" parent="Base.Theme.FYSA" />
 </resources>

@@ -97,7 +97,7 @@
     <string name="save_changes">Save Changes</string>
     <string name="phone_not_available">Phone: ---Not Available---</string>
     <string name="fysa_address_text">Address:\nFYSA HQ,\nNear Ramachandra Mission, \nGanesh Nagar - 2,\nKurnool, \nAndhra Pradesh,\nIndia - 518002.</string>
-    <string name="bookings_list">Bookings List</string>
+    <string name="bookings_list">Bookings Overview</string>
     <string name="scroll_content">Scroll content</string>
     <string name="bachelor_room">Bachelor Room</string>
     <string name="individual_house">Individual House</string>
@@ -130,5 +130,6 @@
 
     <string name="distance_unknown">Distance unknown</string>
     <string name="distance_meters_away">%1$d m away</string>
+    <string name="vacancy_available">Vacancy Available</string>
 
 </resources>

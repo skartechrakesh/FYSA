@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@android:color/white"
+    android:background="?android:attr/colorBackground"
     android:padding="8dp">
 
     <LinearLayout
@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black" />
+            android:textColor="?attr/colorOnSurface" />
 
         <!-- Ad Body -->
         <TextView
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="?attr/colorOnSurface" />
 
         <!-- Call to Action Button -->
         <Button
@@ -36,9 +36,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:layout_gravity="end"
             android:backgroundTint="@color/btnSecondary"
             android:text="@string/install"
-            android:textColor="@android:color/white"
             tools:ignore="TextContrastCheck" />
     </LinearLayout>
 </com.google.android.gms.ads.nativead.NativeAdView>

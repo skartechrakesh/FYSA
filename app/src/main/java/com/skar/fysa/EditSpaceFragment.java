@@ -2,7 +2,9 @@ package com.skar.fysa;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -29,6 +30,7 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
@@ -46,14 +48,14 @@ import java.util.Objects;
 public class EditSpaceFragment extends Fragment {
 
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
-    private MaterialAutoCompleteTextView spinnerCategory;
+    private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;
     private FloatingActionButton btnMyLocation;
     private ImageView crosshair;
     private MaterialButton btnSubmit;
-    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout;
+    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout;
     private MapView mapView;
 
-    private DatabaseReference userSpacesRef, globalSpacesRef;
+    private DatabaseReference globalSpacesRef;
     private String currentUserId;
     private Space space;
 
@@ -62,10 +64,20 @@ public class EditSpaceFragment extends Fragment {
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
+    private OnSpaceUpdatedListener onSpaceUpdatedListener;
+
+    public interface OnSpaceUpdatedListener {
+        void onSpaceUpdated(Space updatedSpace);
+    }
+
+    public void setOnSpaceUpdatedListener(OnSpaceUpdatedListener listener) {
+        this.onSpaceUpdatedListener = listener;
+    }
+
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) moveToCurrentLocation();
-                else Toast.makeText(getContext(), "Location permission denied", Toast.LENGTH_SHORT).show();
+                else Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
             });
 
     @Nullable
@@ -76,39 +88,33 @@ public class EditSpaceFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_edit_space, container, false);
 
-        // OSMDroid setup
         Configuration.getInstance().load(requireContext(),
                 requireContext().getSharedPreferences("osmdroid_prefs", 0));
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Toast.makeText(getContext(), "You must be logged in", Toast.LENGTH_SHORT).show();
+            Snackbar.make(view, "You must be logged in", Snackbar.LENGTH_SHORT).show();
             return view;
         }
 
         currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        userSpacesRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users").child(currentUserId).child("space_details");
-        globalSpacesRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("spaces");
+        globalSpacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
 
         space = (Space) getArguments().getSerializable("space");
         if (space == null) {
-            Toast.makeText(getContext(), "Error: No space data received", Toast.LENGTH_LONG).show();
+            Snackbar.make(view, "Error: No space data received", Snackbar.LENGTH_LONG).show();
             return view;
         }
 
         bindViews(view);
         setupCategorySpinner();
+        setupVacancySpinner();
         setListeners();
         fillFormWithData();
         initMap();
         handleBackPress();
-
-        // Apply stroke helper for inputs
-        FysaApp.setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout);
-
-        loadInterstitialAd(); // Load interstitial ad
+        setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout);
+        loadInterstitialAd();
 
         return view;
     }
@@ -119,6 +125,7 @@ public class EditSpaceFragment extends Fragment {
         inputContact = view.findViewById(R.id.inputContact);
         inputAddress = view.findViewById(R.id.inputAddress);
         spinnerCategory = view.findViewById(R.id.spinnerCategory);
+        spinnerVacancy = view.findViewById(R.id.spinnerVacancy);
         btnMyLocation = view.findViewById(R.id.btnMyLocation);
         crosshair = view.findViewById(R.id.crosshair);
         btnSubmit = view.findViewById(R.id.btnSubmit);
@@ -128,6 +135,7 @@ public class EditSpaceFragment extends Fragment {
         eContactLayout = view.findViewById(R.id.eContactLayout);
         eAddressLayout = view.findViewById(R.id.eAddressLayout);
         eCategoryLayout = view.findViewById(R.id.eCategoryLayout);
+        eVacancyLayout = view.findViewById(R.id.eVacancyLayout);
     }
 
     private void setupCategorySpinner() {
@@ -136,9 +144,17 @@ public class EditSpaceFragment extends Fragment {
                 android.R.layout.simple_dropdown_item_1line, categories);
         spinnerCategory.setAdapter(adapter);
 
-        // Preselect value
         int position = adapter.getPosition(space.getType());
         if (position >= 0) spinnerCategory.setText(adapter.getItem(position), false);
+    }
+
+    private void setupVacancySpinner() {
+        String[] options = {"Yes", "No"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_dropdown_item_1line, options);
+        spinnerVacancy.setAdapter(adapter);
+
+        spinnerVacancy.setText(space.isVacancy() ? "Yes" : "No", false);
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -228,10 +244,10 @@ public class EditSpaceFragment extends Fragment {
                 GeoPoint me = new GeoPoint(last.getLatitude(), last.getLongitude());
                 mapView.getController().setCenter(me);
             } else {
-                Toast.makeText(getContext(), "Unable to fetch last location", Toast.LENGTH_SHORT).show();
+                Snackbar.make(requireView(), "Unable to fetch last location", Snackbar.LENGTH_SHORT).show();
             }
         } catch (SecurityException e) {
-            Toast.makeText(getContext(), "Location permission missing", Toast.LENGTH_SHORT).show();
+            Snackbar.make(requireView(), "Location permission missing", Snackbar.LENGTH_SHORT).show();
         }
     }
 
@@ -241,9 +257,10 @@ public class EditSpaceFragment extends Fragment {
         String contact = inputContact.getText() != null ? inputContact.getText().toString().trim() : "";
         String address = inputAddress.getText() != null ? inputAddress.getText().toString().trim() : "";
         String category = spinnerCategory.getText() != null ? spinnerCategory.getText().toString() : "";
+        String vacancyText = spinnerVacancy.getText() != null ? spinnerVacancy.getText().toString() : "No";
 
         if (name.isEmpty() || ownerName.isEmpty() || contact.isEmpty() || address.isEmpty() || category.isEmpty()) {
-            Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+            Snackbar.make(requireView(), "Please fill all fields", Snackbar.LENGTH_SHORT).show();
             return;
         }
 
@@ -256,29 +273,50 @@ public class EditSpaceFragment extends Fragment {
         space.setLatitude(center.getLatitude());
         space.setLongitude(center.getLongitude());
         space.setType(category);
+        space.setVacancy(vacancyText.equals("Yes"));
 
         globalSpacesRef.child(category).child(space.getId())
                 .setValue(space)
-                .addOnCompleteListener(taskGlobal -> {
-                    if (taskGlobal.isSuccessful()) {
-                        userSpacesRef.child(category).child(space.getId())
-                                .setValue(space)
-                                .addOnCompleteListener(taskUser -> {
-                                    if (taskUser.isSuccessful()) {
-                                        Toast.makeText(getContext(), "Space updated successfully!", Toast.LENGTH_SHORT).show();
-                                        requireActivity().getSupportFragmentManager().popBackStack();
-                                    } else {
-                                        Toast.makeText(getContext(),
-                                                "User update failed: " + Objects.requireNonNull(taskUser.getException()).getMessage(),
-                                                Toast.LENGTH_LONG).show();
-                                    }
-                                });
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // Send updated space to ManageSpacesFragment
+                        Bundle result = new Bundle();
+                        result.putSerializable("space", space);
+                        result.putString("category", category);
+                        getParentFragmentManager().setFragmentResult("edit_space_result", result);
+
+                        if (onSpaceUpdatedListener != null) {
+                            onSpaceUpdatedListener.onSpaceUpdated(space);
+                        }
+                        Snackbar.make(requireView(), "Space updated successfully!", Snackbar.LENGTH_SHORT).show();
+                        requireActivity().getSupportFragmentManager().popBackStack();
                     } else {
-                        Toast.makeText(getContext(),
-                                "Global update failed: " + Objects.requireNonNull(taskGlobal.getException()).getMessage(),
-                                Toast.LENGTH_LONG).show();
+                        Snackbar.make(requireView(),
+                                "Update failed: " + Objects.requireNonNull(task.getException()).getMessage(),
+                                Snackbar.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+
+            input.setBoxStrokeColorStateList(states);
+        }
     }
 
     private void loadInterstitialAd() {

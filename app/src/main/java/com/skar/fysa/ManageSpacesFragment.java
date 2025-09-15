@@ -1,5 +1,7 @@
 package com.skar.fysa;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,31 +9,38 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ManageSpacesFragment extends Fragment {
 
     private LinearLayout spacesListContainer;
-    private DatabaseReference userSpacesRef, globalSpacesRef;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private DatabaseReference globalSpacesRef;
+
+    private static final int BATCH_SIZE = 5;
+    private int loadedCount = 0;
+    private final List<SpaceWrapper> allSpaces = new ArrayList<>();
+
+    private static final String PREFS_NAME = "spaces_cache";
+    private static final String KEY_SPACES = "all_spaces";
 
     @Nullable
     @Override
@@ -40,113 +49,206 @@ public class ManageSpacesFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View root = inflater.inflate(R.layout.fragment_manage_spaces, container, false);
+
         spacesListContainer = root.findViewById(R.id.spacesListContainer);
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
 
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            String currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+        FirebaseDatabase db = FirebaseDatabase.getInstance(
+                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        );
+        globalSpacesRef = db.getReference("spaces");
 
-            FirebaseDatabase db = FirebaseDatabase.getInstance(
-                    "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-            );
-
-            userSpacesRef = db.getReference("users").child(currentUserId).child("space_details");
-            globalSpacesRef = db.getReference("spaces");
-
-            loadSpaces(inflater);
+        // Load from cache first
+        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
+        if (!cachedSpaces.isEmpty()) {
+            allSpaces.addAll(cachedSpaces);
+            loadNextBatch(inflater);
         } else {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            fetchSpacesFromFirebase(inflater);
         }
 
-        // Pull-to-refresh
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            loadSpaces(inflater);
+            fetchSpacesFromFirebase(inflater);
             swipeRefreshLayout.setRefreshing(false);
         });
+
+        // Listen for edited spaces from EditSpaceFragment
+        getParentFragmentManager().setFragmentResultListener("edit_space_result", this,
+                (requestKey, bundle) -> {
+                    Space editedSpace = (Space) bundle.getSerializable("space");
+                    String category = bundle.getString("category");
+
+                    // Update cached object
+                    boolean updated = false;
+                    for (SpaceWrapper wrapper : allSpaces) {
+                        if (wrapper.space.getId().equals(editedSpace.getId()) &&
+                                wrapper.category.equals(category)) {
+                            wrapper.space = editedSpace;
+                            updated = true;
+                            break;
+                        }
+                    }
+                    if (!updated) allSpaces.add(new SpaceWrapper(category, editedSpace));
+
+                    updateCache(editedSpace, category);
+
+                    // Update UI row
+                    String tag = editedSpace.getId() + "_" + category;
+                    View rowToUpdate = spacesListContainer.findViewWithTag(tag);
+                    if (rowToUpdate != null) {
+                        TextView txtSpaceName = rowToUpdate.findViewById(R.id.spaceName);
+                        TextView tvVacancy = rowToUpdate.findViewById(R.id.vacancySwitch);
+
+                        txtSpaceName.setText(editedSpace.getName() + " (" + editedSpace.getType() + ")");
+                        if (editedSpace.isVacancy()) {
+                            tvVacancy.setText("Vacancy Available: Yes");
+                            tvVacancy.setTextColor(getResources().getColor(R.color.green_500, null));
+                        } else {
+                            tvVacancy.setText("Vacancy Available: No");
+                            tvVacancy.setTextColor(getResources().getColor(R.color.red_500, null));
+                        }
+                    } else {
+                        // Row not found (maybe not yet loaded), add it
+                        addSpaceRow(getLayoutInflater(), editedSpace, category);
+                    }
+                });
 
         return root;
     }
 
-    private void loadSpaces(LayoutInflater inflater) {
-        spacesListContainer.removeAllViews();
+    // ------------------- SharedPreferences helpers -------------------
+    private void saveSpacesToCache(List<SpaceWrapper> spaces) {
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putString(KEY_SPACES, new Gson().toJson(spaces)).apply();
+    }
 
-        userSpacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    private List<SpaceWrapper> getSpacesFromCache() {
+        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_SPACES, null);
+        if (json == null) return new ArrayList<>();
+        Type type = new TypeToken<List<SpaceWrapper>>(){}.getType();
+        return new Gson().fromJson(json, type);
+    }
+
+    private void updateCache(Space space, String category) {
+        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
+        for (SpaceWrapper wrapper : cachedSpaces) {
+            if (wrapper.space.getId().equals(space.getId()) && wrapper.category.equals(category)) {
+                wrapper.space = space;
+                break;
+            }
+        }
+        saveSpacesToCache(cachedSpaces);
+    }
+
+    private void deleteFromCache(Space space, String category) {
+        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
+        cachedSpaces.removeIf(wrapper -> wrapper.space.getId().equals(space.getId())
+                && wrapper.category.equals(category));
+        saveSpacesToCache(cachedSpaces);
+    }
+
+    // ------------------- Firebase Loading -------------------
+    private void fetchSpacesFromFirebase(LayoutInflater inflater) {
+        spacesListContainer.removeAllViews();
+        loadedCount = 0;
+        allSpaces.clear();
+
+        globalSpacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                boolean hasSpaces = false;
-
+                List<SpaceWrapper> spacesToCache = new ArrayList<>();
                 for (DataSnapshot categorySnapshot : snapshot.getChildren()) {
                     String category = categorySnapshot.getKey();
-
                     for (DataSnapshot spaceSnapshot : categorySnapshot.getChildren()) {
                         Space space = spaceSnapshot.getValue(Space.class);
                         if (space != null) {
-                            hasSpaces = true;
                             space.setId(spaceSnapshot.getKey());
-                            addSpaceRow(inflater, space, spaceSnapshot, category);
+                            SpaceWrapper wrapper = new SpaceWrapper(category, space);
+                            allSpaces.add(wrapper);
+                            spacesToCache.add(wrapper);
                         }
                     }
                 }
+                saveSpacesToCache(spacesToCache);
 
-                if (!hasSpaces) {
-                    Toast.makeText(getContext(), "No spaces found", Toast.LENGTH_SHORT).show();
-                }
+                if (allSpaces.isEmpty()) showSnackbar(spacesListContainer, "No spaces found");
+                else loadNextBatch(inflater);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(),
-                        "Error loading spaces: " + error.getMessage(),
-                        Toast.LENGTH_LONG).show();
+                showSnackbar(spacesListContainer, "Error loading spaces: " + error.getMessage());
             }
         });
     }
 
-    private void addSpaceRow(LayoutInflater inflater, Space space, DataSnapshot spaceSnapshot, String category) {
-        View spaceRow = inflater.inflate(R.layout.item_manage_space, spacesListContainer, false);
+    private void loadNextBatch(LayoutInflater inflater) {
+        int end = Math.min(loadedCount + BATCH_SIZE, allSpaces.size());
+
+        for (int i = loadedCount; i < end; i++) {
+            SpaceWrapper wrapper = allSpaces.get(i);
+            addSpaceRow(inflater, wrapper.space, wrapper.category);
+        }
+
+        loadedCount = end;
+
+        if (loadedCount < allSpaces.size()) addLoadMoreLink(inflater);
+    }
+
+    private void addLoadMoreLink(LayoutInflater inflater) {
+        View existing = spacesListContainer.findViewWithTag("load_more_link");
+        if (existing != null) spacesListContainer.removeView(existing);
+
+        TextView loadMoreLink = new TextView(requireContext());
+        loadMoreLink.setText("Load More");
+        loadMoreLink.setTag("load_more_link");
+        loadMoreLink.setTextColor(getResources().getColor(R.color.linkText, null));
+        loadMoreLink.setTextSize(16f);
+        loadMoreLink.setPadding(0, 24, 0, 24);
+        loadMoreLink.setPaintFlags(loadMoreLink.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        loadMoreLink.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        loadMoreLink.setLayoutParams(params);
+
+        loadMoreLink.setOnClickListener(v -> {
+            spacesListContainer.removeView(v);
+            loadNextBatch(inflater);
+        });
+
+        spacesListContainer.addView(loadMoreLink);
+    }
+
+    private void addSpaceRow(LayoutInflater inflater, Space space, String category) {
+        View spaceRow = inflater.inflate(R.layout.item_manage_space_list, spacesListContainer, false);
+
+        // Tag row with unique identifier
+        spaceRow.setTag(space.getId() + "_" + category);
 
         TextView txtSpaceName = spaceRow.findViewById(R.id.spaceName);
         ImageButton btnEditSpace = spaceRow.findViewById(R.id.btnEditSpace);
         ImageButton btnDeleteSpace = spaceRow.findViewById(R.id.btnDeleteSpace);
-        SwitchCompat vacancySwitch = spaceRow.findViewById(R.id.vacancySwitch);
+        TextView tvVacancy = spaceRow.findViewById(R.id.vacancySwitch);
 
         txtSpaceName.setText(space.getName() + " (" + space.getType() + ")");
+        if (space.isVacancy()) {
+            tvVacancy.setText("Vacancy Available: Yes");
+            tvVacancy.setTextColor(getResources().getColor(R.color.green_500, null));
+        } else {
+            tvVacancy.setText("Vacancy Available: No");
+            tvVacancy.setTextColor(getResources().getColor(R.color.red_500, null));
+        }
 
-        // Load vacancy state
-        vacancySwitch.setChecked(space.isVacancy());
-
-        // Handle toggle changes
-        vacancySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("vacancy", isChecked);
-
-            // Update in user's node
-            userSpacesRef.child(category).child(space.getId()).updateChildren(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        // Update in global node
-                        globalSpacesRef.child(category).child(space.getId()).updateChildren(updates)
-                                .addOnSuccessListener(aVoid2 ->
-                                        Toast.makeText(getContext(),
-                                                "Vacancy updated: " + (isChecked ? "Yes" : "No"),
-                                                Toast.LENGTH_SHORT).show())
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(getContext(),
-                                                "Global update failed: " + e.getMessage(),
-                                                Toast.LENGTH_LONG).show());
-                    })
-                    .addOnFailureListener(e ->
-                            Toast.makeText(getContext(),
-                                    "Update failed: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show());
-        });
-
-        // Edit button
         btnEditSpace.setOnClickListener(v -> {
             EditSpaceFragment editFragment = new EditSpaceFragment();
             Bundle args = new Bundle();
             args.putSerializable("space", space);
+            args.putString("category", category);
             editFragment.setArguments(args);
-
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragmentContainer, editFragment)
@@ -154,30 +256,40 @@ public class ManageSpacesFragment extends Fragment {
                     .commit();
         });
 
-        // Delete button
         btnDeleteSpace.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Space")
                 .setMessage("Are you sure you want to delete " + space.getName() + "?")
-                .setPositiveButton("Yes", (dialog, which) -> spaceSnapshot.getRef().removeValue()
-                        .addOnSuccessListener(aVoid -> globalSpacesRef.child(category).child(space.getId())
-                                .removeValue()
-                                .addOnSuccessListener(aVoid2 -> {
-                                    Toast.makeText(getContext(),
-                                            "Deleted " + space.getName(),
-                                            Toast.LENGTH_SHORT).show();
-                                    loadSpaces(inflater);
-                                })
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(getContext(),
-                                                "Failed global delete: " + e.getMessage(),
-                                                Toast.LENGTH_LONG).show()))
-                        .addOnFailureListener(e ->
-                                Toast.makeText(getContext(),
-                                        "Failed to delete: " + e.getMessage(),
-                                        Toast.LENGTH_LONG).show()))
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    globalSpacesRef.child(category).child(space.getId())
+                            .removeValue()
+                            .addOnSuccessListener(aVoid -> {
+                                showSnackbar(spaceRow, "Deleted " + space.getName());
+                                allSpaces.removeIf(wrapper ->
+                                        wrapper.space.getId().equals(space.getId()) &&
+                                                wrapper.category.equals(category));
+                                deleteFromCache(space, category);
+                                spacesListContainer.removeAllViews();
+                                loadedCount = 0;
+                                loadNextBatch(inflater);
+                            });
+                })
                 .setNegativeButton("No", null)
                 .show());
 
         spacesListContainer.addView(spaceRow);
+    }
+
+    private void showSnackbar(View view, String message) {
+        Snackbar.make(view, message, Snackbar.LENGTH_SHORT).show();
+    }
+
+    public static class SpaceWrapper {
+        public String category;
+        public Space space;
+
+        public SpaceWrapper(String category, Space space) {
+            this.category = category;
+            this.space = space;
+        }
     }
 }

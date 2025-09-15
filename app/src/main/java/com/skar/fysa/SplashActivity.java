@@ -2,15 +2,15 @@ package com.skar.fysa;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -22,36 +22,29 @@ import com.google.firebase.database.ValueEventListener;
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
 
-    private static final int SPLASH_DELAY = 1000; // 1 second
+    private static final int SPLASH_DELAY = 1800; // 1 second
 
     private FirebaseAuth mAuth;
     private DatabaseReference usersRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
-
-        setStatusBarBlack();
+        // Load the saved theme before calling super.onCreate()
+        SharedPreferences sharedPreferences = getSharedPreferences("theme_preference", MODE_PRIVATE);
+        int savedTheme = sharedPreferences.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        AppCompatDelegate.setDefaultNightMode(savedTheme);
 
         mAuth = FirebaseAuth.getInstance();
         usersRef = FirebaseDatabase
                 .getInstance("https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .getReference("users");
 
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash);
+
         // Delay for splash branding, then redirect
         new Handler(Looper.getMainLooper()).postDelayed(this::checkSessionAndRedirect, SPLASH_DELAY);
-    }
-
-    /**
-     * ---------- STATUS BAR ----------
-     **/
-    private void setStatusBarBlack() {
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
-        View decor = getWindow().getDecorView();
-        decor.setSystemUiVisibility(
-                decor.getSystemUiVisibility() & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-        );
+        new Handler(Looper.getMainLooper()).postDelayed(this::goToMainActivity, SPLASH_DELAY);
     }
 
     /**

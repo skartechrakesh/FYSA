@@ -33,7 +33,7 @@ public class AboutAppFragment extends Fragment {
         tvAppName.setText("FYSA");
         tvTitleDescription.setText("(Find Your Space Anywhere)");
         tvVersion.setText("Version: 1.0.0");
-        tvDeveloper.setText("Developer: Rakesh Reddy Battula");
+        tvDeveloper.setText("Developer: SKAR Technologies");
         tvDescription.setText("Fysa is your ultimate app to find, manage, and book spaces easily.");
     }
 }

@@ -23,11 +23,8 @@ public class SupportFragment extends Fragment {
 
         // Inflate fragment layout (without top bar)
         View view = inflater.inflate(R.layout.fragment_support, container, false);
-
         ImageButton btnEmailSupport = view.findViewById(R.id.btnEmailSupport);
-
         btnEmailSupport.setOnClickListener(v -> openEmailSupport());
-
         return view;
     }
 

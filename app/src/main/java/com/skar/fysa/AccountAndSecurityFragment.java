@@ -14,7 +14,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -28,7 +27,9 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -62,6 +63,7 @@ public class AccountAndSecurityFragment extends Fragment {
 
     private InterstitialAd mInterstitialAd;
 
+    // Image picker launcher
     private final ActivityResultLauncher<Intent> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     result -> {
@@ -102,27 +104,35 @@ public class AccountAndSecurityFragment extends Fragment {
                 .getReference("users")
                 .child(currentUser.getUid());
 
+        // Load initial data
         loadUserData();
         updateVerificationUI();
-
-        // Load interstitial ad
         loadInterstitialAd();
 
+        // Listeners
         btnEditPassword.setOnClickListener(v -> showPasswordChangeDialog());
         btnSave.setOnClickListener(v -> {
-            showInterstitialAd();
-            // Delay showing the interstitial slightly so Toast can be seen
-            new android.os.Handler().postDelayed(this::showInterstitialAd, 1000);
             saveUserData();
+            showInterstitialAd();
         });
         btnVerifyEmail.setOnClickListener(v -> sendVerificationEmail());
         btnDeleteAccount.setOnClickListener(v -> handleDeleteAccount());
+
+        imgProfile.setOnClickListener(v -> pickImage());
     }
 
+    // Open gallery to pick profile image
+    private void pickImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        imagePickerLauncher.launch(intent);
+    }
+
+    // Load interstitial ad
     private void loadInterstitialAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712", // test id, replace with real one
+                "ca-app-pub-3940256099942544/1033173712", // test id
                 adRequest,
                 new InterstitialAdLoadCallback() {
                     @Override
@@ -141,11 +151,11 @@ public class AccountAndSecurityFragment extends Fragment {
         if (mInterstitialAd != null) {
             mInterstitialAd.show(requireActivity());
             mInterstitialAd = null;
-            // Preload next ad
             loadInterstitialAd();
         }
     }
 
+    // Load user data from Firebase
     private void loadUserData() {
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -157,7 +167,7 @@ public class AccountAndSecurityFragment extends Fragment {
                 etUsername.setText(username);
                 etEmail.setText(snapshot.child("email").getValue(String.class));
                 etContact.setText(snapshot.child("contact").getValue(String.class));
-                tvAccountType.setText(String.format(Locale.getDefault(), "Account Type: %s", accountType));
+                tvAccountType.setText(String.format(Locale.getDefault(), "%s", accountType));
                 String imageUrl = snapshot.child("profileImage").getValue(String.class);
                 if (imageUrl != null && !imageUrl.isEmpty()) {
                     Glide.with(AccountAndSecurityFragment.this).load(imageUrl).into(imgProfile);
@@ -166,7 +176,7 @@ public class AccountAndSecurityFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(requireContext(), "Failed to load user data.", Toast.LENGTH_SHORT).show();
+                showSnackbar("Failed to load user data.");
             }
         });
     }
@@ -188,19 +198,21 @@ public class AccountAndSecurityFragment extends Fragment {
         if (currentUser == null) return;
         currentUser.sendEmailVerification().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                Toast.makeText(requireContext(), "Verification email sent.", Toast.LENGTH_SHORT).show();
+                showSnackbar("Verification email sent.");
             }
         });
     }
 
+    // Save updates to Firebase
     private void saveUserData() {
         userRef.child("name").setValue(etName.getText().toString().trim());
         userRef.child("username").setValue(etUsername.getText().toString().trim());
         userRef.child("email").setValue(etEmail.getText().toString().trim());
         userRef.child("contact").setValue(etContact.getText().toString().trim());
-        Toast.makeText(requireContext(), "Saved successfully", Toast.LENGTH_SHORT).show();
+        showSnackbar("Saved successfully");
     }
 
+    // Change password dialog
     private void showPasswordChangeDialog() {
         if (currentUser == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
@@ -215,20 +227,21 @@ public class AccountAndSecurityFragment extends Fragment {
             String currentPass = etCurrentPassword.getText().toString().trim();
             String newPass = etNewPassword.getText().toString().trim();
             if (currentPass.isEmpty() || newPass.isEmpty()) {
-                Toast.makeText(requireContext(), "Fill all fields", Toast.LENGTH_SHORT).show();
+                showSnackbar("Fill all fields");
                 return;
             }
             AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), currentPass);
             currentUser.reauthenticate(credential)
                     .addOnSuccessListener(unused -> currentUser.updatePassword(newPass)
-                            .addOnSuccessListener(aVoid -> Toast.makeText(requireContext(), "Password updated", Toast.LENGTH_SHORT).show())
-                            .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to update password: " + e.getMessage(), Toast.LENGTH_SHORT).show()))
-                    .addOnFailureListener(e -> Toast.makeText(requireContext(), "Re-authentication failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            .addOnSuccessListener(aVoid -> showSnackbar("Password updated"))
+                            .addOnFailureListener(e -> showSnackbar("Failed to update password: " + e.getMessage())))
+                    .addOnFailureListener(e -> showSnackbar("Re-authentication failed: " + e.getMessage()));
         });
         builder.setNegativeButton("Cancel", (d, w) -> d.dismiss());
         builder.show();
     }
 
+    // Handle account deletion
     private void handleDeleteAccount() {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Account")
@@ -247,36 +260,40 @@ public class AccountAndSecurityFragment extends Fragment {
                     if (isGoogleUser) {
                         deleteAllUserData();
                     } else {
-                        AlertDialog.Builder reauthBuilder = new AlertDialog.Builder(requireContext());
-                        reauthBuilder.setTitle("Re-authenticate");
-                        reauthBuilder.setMessage("Please enter your current password to confirm deletion.");
-                        final EditText passwordInput = new EditText(requireContext());
-                        passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                        reauthBuilder.setView(passwordInput);
-                        reauthBuilder.setPositiveButton("Confirm", (reauthDialog, reauthWhich) -> {
-                            String password = passwordInput.getText().toString().trim();
-                            if (password.isEmpty()) {
-                                Toast.makeText(requireContext(), "Password cannot be empty.", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), password);
-                            currentUser.reauthenticate(credential)
-                                    .addOnSuccessListener(unused -> deleteAllUserData())
-                                    .addOnFailureListener(e -> Toast.makeText(requireContext(), "Re-authentication failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
-                        }).setNegativeButton("Cancel", (reauthDialog, reauthWhich) -> reauthDialog.dismiss());
-                        reauthBuilder.show();
+                        showReauthDialog();
                     }
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
+    private void showReauthDialog() {
+        AlertDialog.Builder reauthBuilder = new AlertDialog.Builder(requireContext());
+        reauthBuilder.setTitle("Re-authenticate");
+        reauthBuilder.setMessage("Please enter your current password to confirm deletion.");
+        final EditText passwordInput = new EditText(requireContext());
+        passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        reauthBuilder.setView(passwordInput);
+        reauthBuilder.setPositiveButton("Confirm", (reauthDialog, reauthWhich) -> {
+            String password = passwordInput.getText().toString().trim();
+            if (password.isEmpty()) {
+                showSnackbar("Password cannot be empty.");
+                return;
+            }
+            AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), password);
+            currentUser.reauthenticate(credential)
+                    .addOnSuccessListener(unused -> deleteAllUserData())
+                    .addOnFailureListener(e -> showSnackbar("Re-authentication failed: " + e.getMessage()));
+        }).setNegativeButton("Cancel", (reauthDialog, reauthWhich) -> reauthDialog.dismiss());
+        reauthBuilder.show();
+    }
+
+    // Delete all user-related data
     private void deleteAllUserData() {
         String currentUserId = currentUser.getUid();
         List<DatabaseReference> referencesToDelete = new ArrayList<>();
 
         referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("users").child(currentUserId));
-        referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("user_secure").child(currentUserId));
 
         if (username != null && !username.isEmpty()) {
             referencesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("usernames").child(username));
@@ -301,7 +318,7 @@ public class AccountAndSecurityFragment extends Fragment {
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(requireContext(), "Failed to read spaces for deletion: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    showSnackbar("Failed to read spaces for deletion: " + error.getMessage());
                 }
             });
         } else {
@@ -322,14 +339,15 @@ public class AccountAndSecurityFragment extends Fragment {
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
-                    Toast.makeText(requireContext(), "Failed to read notifications for deletion: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    showSnackbar("Failed to read notifications for deletion: " + error.getMessage());
                 }
             });
         }
     }
 
+    // Execute all deletion tasks
     private void executeDeletions(List<DatabaseReference> refs) {
-        List<com.google.android.gms.tasks.Task<Void>> tasks = new ArrayList<>();
+        List<Task<Void>> tasks = new ArrayList<>();
         for (DatabaseReference ref : refs) {
             tasks.add(ref.removeValue());
         }
@@ -338,14 +356,20 @@ public class AccountAndSecurityFragment extends Fragment {
                 .addOnSuccessListener(aVoid -> {
                     currentUser.delete()
                             .addOnSuccessListener(aVoid1 -> {
-                                Toast.makeText(requireContext(), "Account and all data deleted successfully.", Toast.LENGTH_LONG).show();
+                                showSnackbar("Account and all data deleted successfully.");
                                 Intent intent = new Intent(requireActivity(), LoginActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                                 startActivity(intent);
                                 requireActivity().finish();
                             })
-                            .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to delete user auth: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                            .addOnFailureListener(e -> showSnackbar("Failed to delete user auth: " + e.getMessage()));
                 })
-                .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to delete account data: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                .addOnFailureListener(e -> showSnackbar("Failed to delete account data: " + e.getMessage()));
+    }
+
+    private void showSnackbar(String message) {
+        if (getView() != null) {
+            Snackbar.make(getView(), message, Snackbar.LENGTH_LONG).show();
+        }
     }
 }

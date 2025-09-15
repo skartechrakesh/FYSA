@@ -2,7 +2,10 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp"
+    tools:context=".AboutAppFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,7 +18,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/app_name"
-            android:textColor="#2183F3"
+            android:textColor="@color/linkText"
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp"/>
@@ -25,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/app_tagline"
-            android:textColor="#0368DC"
+            android:textColor="@color/linkText"
             android:textSize="13sp"
             android:layout_marginBottom="8dp"/>
 
@@ -43,7 +46,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/developer"
-            android:textColor="@color/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp"
             android:layout_marginBottom="16dp"/>
 
@@ -52,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/app_description"
-            android:textColor="@color/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp"
             android:lineSpacingExtra="2dp"/>
     </LinearLayout>

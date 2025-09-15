@@ -6,6 +6,7 @@
     android:layout_margin="8dp"
     android:elevation="4dp"
     android:foreground="?attr/selectableItemBackground"
+    android:background="?android:attr/colorBackground"
     android:clickable="true"
     android:focusable="true">
 
@@ -23,7 +24,7 @@
             android:text=""
             android:textStyle="bold"
             android:textSize="16sp"
-            android:textColor="@color/textPrimary"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <!-- Type -->
         <TextView
@@ -32,7 +33,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textSize="14sp"
-            android:textColor="@color/btnSecondary"/>
+            android:textColor="@color/linkText"/>
 
         <!-- Owner -->
         <TextView
@@ -41,7 +42,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textSize="13sp"
-            android:textColor="@color/textPrimary"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <!-- Address -->
         <TextView
@@ -50,7 +51,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textSize="13sp"
-            android:textColor="@color/textPrimary"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <!-- Contact -->
         <TextView
@@ -59,7 +60,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textSize="13sp"
-            android:textColor="@color/textPrimary"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <!-- Vacancy -->
         <TextView

@@ -1,41 +1,33 @@
 package com.skar.fysa;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.app.Activity;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.SignInButton;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.OAuthProvider;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-@SuppressWarnings("deprecation") // Suppresses GoogleSignInAccount and related warnings
+@SuppressWarnings("deprecation")
 public class LoginActivity extends AppCompatActivity {
 
     private ImageButton btnThemeToggle;
@@ -45,33 +37,20 @@ public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
     private DatabaseReference usersRef;
-    private GoogleSignInClient googleSignInClient;
 
-    private final ActivityResultLauncher<Intent> googleSignInLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                            Task<GoogleSignInAccount> task =
-                                    GoogleSignIn.getSignedInAccountFromIntent(result.getData());
-                            try {
-                                GoogleSignInAccount account = task.getResult(ApiException.class);
-                                if (account != null) firebaseAuthWithGoogle(account.getIdToken());
-                            } catch (ApiException e) {
-                                setLoading(false);
-                                showSnackbar("Google Sign-In failed: " + e.getMessage());
-                            }
-                        } else {
-                            setLoading(false);
-                            showSnackbar("Google Sign-In cancelled.");
-                        }
-                    });
+    // Theme preference keys from RegisterActivity
+    private static final String PREFS_NAME = "theme_preference";
+    private static final String KEY_THEME_MODE = "theme_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Load the saved theme before calling super.onCreate()
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int savedTheme = sharedPreferences.getInt(KEY_THEME_MODE, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        AppCompatDelegate.setDefaultNightMode(savedTheme);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
-        FysaApp.setStatusBarColor(this);
 
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         btnLoginSubmit = findViewById(R.id.btnLoginSubmit);
@@ -80,27 +59,18 @@ public class LoginActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         emailLayout = findViewById(R.id.emailLayout);
         passwordLayout = findViewById(R.id.passwordLayout);
-        SignInButton btnGoogleSignIn = findViewById(R.id.btnGoogleSignIn);
 
         auth = FirebaseAuth.getInstance();
         String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
         usersRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference("users");
 
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-        googleSignInClient = GoogleSignIn.getClient(this, gso);
-
-        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-        btnThemeToggle.setOnClickListener(v -> FysaApp.toggleThemeWithAnimation(this, btnThemeToggle));
+        btnThemeToggle.setOnClickListener(v -> changeTheme());
 
         btnLoginSubmit.setOnClickListener(v -> performLogin());
         linkRegister.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
         linkForgotPassword.setOnClickListener(v -> sendPasswordResetEmail());
-        btnGoogleSignIn.setOnClickListener(v -> signInWithGoogle());
 
-        FysaApp.setupTextInputStrokes(this, emailLayout, passwordLayout);
+        setupTextInputStrokes(this, emailLayout, passwordLayout);
     }
 
     @Override
@@ -112,11 +82,22 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-        FysaApp.setStatusBarColor(this);
+    private void changeTheme() {
+        int nightMode = AppCompatDelegate.getDefaultNightMode();
+        int newNightMode;
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+            newNightMode = AppCompatDelegate.MODE_NIGHT_NO;
+        } else {
+            newNightMode = AppCompatDelegate.MODE_NIGHT_YES;
+        }
+
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(KEY_THEME_MODE, newNightMode);
+        editor.apply();
+
+        AppCompatDelegate.setDefaultNightMode(newNightMode);
+        recreate();
     }
 
     private void performLogin() {
@@ -144,66 +125,6 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         setLoading(false);
                         showSnackbar("Login failed: " +
-                                (task.getException() != null ? task.getException().getMessage() : ""));
-                    }
-                });
-    }
-
-    private void signInWithGoogle() {
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
-            // Dark mode → external browser sign-in
-            signInWithGoogleExternal();
-        } else {
-            // Light mode → default Google sign-in intent
-            setLoading(true);
-            googleSignInLauncher.launch(googleSignInClient.getSignInIntent());
-        }
-    }
-
-    private void signInWithGoogleExternal() {
-        setLoading(true);
-
-        OAuthProvider.Builder provider = OAuthProvider.newBuilder("google.com");
-        auth.startActivityForSignInWithProvider(this, provider.build())
-                .addOnSuccessListener(authResult -> {
-                    FirebaseUser user = authResult.getUser();
-                    if (user != null) {
-                        redirectToDashboard(user.getUid());
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    showSnackbar("Google sign-in failed: " + e.getMessage());
-                });
-    }
-
-    private void firebaseAuthWithGoogle(String idToken) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
-        auth.signInWithCredential(credential)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && auth.getCurrentUser() != null) {
-                        FirebaseUser user = auth.getCurrentUser();
-                        usersRef.child(user.getUid()).addListenerForSingleValueEvent(new ValueEventListener() {
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                if (snapshot.exists()) {
-                                    redirectToDashboard(user.getUid());
-                                } else {
-                                    setLoading(false);
-                                    auth.signOut();
-                                    showSnackbar("Please register first with this account.");
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError error) {
-                                setLoading(false);
-                                showSnackbar("Database Error: " + error.getMessage());
-                            }
-                        });
-                    } else {
-                        setLoading(false);
-                        showSnackbar("Firebase Authentication failed: " +
                                 (task.getException() != null ? task.getException().getMessage() : ""));
                     }
                 });
@@ -269,5 +190,24 @@ public class LoginActivity extends AppCompatActivity {
 
     private void showSnackbar(String message) {
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+            input.setBoxStrokeColorStateList(states);
+        }
     }
 }

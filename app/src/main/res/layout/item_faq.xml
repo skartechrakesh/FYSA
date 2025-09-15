@@ -13,7 +13,7 @@
         android:text="@string/sample_question"
         android:textStyle="bold"
         android:textSize="16sp"
-        android:textColor="@color/textPrimary" />
+        android:textColor="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/tvAnswer"
@@ -22,6 +22,6 @@
         android:text="@string/sample_answer_goes_here"
         android:textSize="14sp"
         android:visibility="gone"
-        android:textColor="@color/textSecondary"
+        android:textColor="?attr/colorOnSurface"
         android:paddingTop="4dp" />
 </LinearLayout>

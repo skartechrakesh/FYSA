@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:padding="16dp">
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp"
+    tools:context=".EditSpaceFragment">
 
     <LinearLayout
         android:id="@+id/formContainer"
@@ -22,7 +24,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="12dp"
             android:text="@string/edit_space"
-            android:textColor="@color/textPrimary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -41,8 +43,8 @@
                 android:id="@+id/inputName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="#546E7A"
                 tools:ignore="TextContrastCheck,TouchTargetSizeCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -63,8 +65,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="#546E7A"
                 tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -85,8 +87,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="phone"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="#546E7A"
                 tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -109,8 +111,8 @@
                 android:gravity="top|start"
                 android:inputType="textMultiLine"
                 android:minLines="2"
-                android:textColor="@color/textPrimary"
-                android:textColorHint="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="#546E7A"
                 tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -127,7 +129,7 @@
             app:boxStrokeColor="@color/linkText"
             app:boxStrokeWidth="2dp"
             app:boxBackgroundMode="outline"
-            app:hintTextColor="@color/textSecondary">
+            app:hintTextColor="#546E7A">
 
             <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/spinnerCategory"
@@ -140,7 +142,37 @@
                 android:padding="8dp"
                 android:scrollbars="vertical"
                 android:singleLine="true"
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                tools:ignore="SpeakableTextPresentCheck,VisualLintTextFieldSize" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ===== Vacancy Available Spinner ===== -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/eVacancyLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:dropDownWidth="match_parent"
+            android:dropDownHeight="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="@string/vacancy_available"
+            app:boxStrokeColor="@color/linkText"
+            app:boxStrokeWidth="2dp"
+            app:boxBackgroundMode="outline"
+            app:hintTextColor="#546E7A">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/spinnerVacancy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:inputType="none"
+                android:minHeight="48dp"
+                android:padding="8dp"
+                android:scrollbars="vertical"
+                android:singleLine="true"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
                 tools:ignore="SpeakableTextPresentCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -190,12 +222,14 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
             android:layout_marginTop="20dp"
+            android:text="@string/submit"
             android:backgroundTint="@color/btnSecondary"
-            android:text="@string/save_changes"
             android:textColor="@color/textPrimary"
-            app:cornerRadius="8dp"
-            tools:ignore="TouchTargetSizeCheck,TextContrastCheck,VisualLintButtonSize" />
+            app:cornerRadius="12dp"
+            tools:ignore="TouchTargetSizeCheck,VisualLintButtonSize" />
 
     </LinearLayout>
 </ScrollView>

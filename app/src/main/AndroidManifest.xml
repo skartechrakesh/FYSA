@@ -3,23 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.skar.fysa">
 
-    <!-- 🔑 Essential permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- 📱 Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- 📍 Optional hardware features -->
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="false" />
 
     <application
-        android:name=".FysaApp"
         android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
@@ -28,15 +24,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FYSA"
         android:usesCleartextTraffic="false"
-        tools:targetApi="34"
-        tools:node="merge">
+        tools:node="merge"
+        tools:targetApi="34">
 
-        <!-- ✅ AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-6462351900381242~6529800939" />
 
-        <!-- 🌍 osmdroid configuration -->
         <meta-data
             android:name="osmdroid.basePath"
             android:value="osmdroid" />
@@ -44,7 +38,6 @@
             android:name="osmdroid.cachePath"
             android:value="osmdroid/cache" />
 
-        <!-- 🚀 Splash screen (Launcher Activity) -->
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -54,12 +47,10 @@
             </intent-filter>
         </activity>
 
-        <!-- 🏠 Main activity -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
 
-        <!-- 🔐 Authentication -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false"
@@ -69,13 +60,12 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- 📊 Dashboards -->
         <activity
             android:name=".OwnerDashboardActivity"
             android:exported="false" />
         <activity
             android:name=".UserDashboardActivity"
             android:exported="false" />
-
     </application>
+
 </manifest>

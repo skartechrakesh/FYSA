@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="?android:attr/colorBackground"
+    tools:context=".SettingsFragment">
 
     <!-- Settings List -->
     <ScrollView
@@ -39,14 +41,14 @@
                     android:layout_weight="1"
                     android:text="@string/account_amp_security"
                     android:textSize="16sp"
-                    android:textColor="@color/textPrimary" />
+                    android:textColor="?attr/colorOnSurface"/>
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
                     android:contentDescription="@string/account_amp_security"
-                    app:tint="@color/textSecondary" />
+                    app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- Privacy & Policy -->
@@ -65,14 +67,14 @@
                     android:layout_weight="1"
                     android:text="@string/privacy_policy"
                     android:textSize="16sp"
-                    android:textColor="@color/textPrimary" />
+                    android:textColor="?attr/colorOnSurface" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
                     android:contentDescription="@string/privacy_policy"
-                    app:tint="@color/textSecondary" />
+                    app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- FAQ's -->
@@ -91,14 +93,14 @@
                     android:layout_weight="1"
                     android:text="@string/faq_s"
                     android:textSize="16sp"
-                    android:textColor="@color/textPrimary" />
+                    android:textColor="?attr/colorOnSurface" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
                     android:contentDescription="@string/faqs"
-                    app:tint="@color/textSecondary" />
+                    app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- Help & Support -->
@@ -117,14 +119,14 @@
                     android:layout_weight="1"
                     android:text="@string/help_amp_support"
                     android:textSize="16sp"
-                    android:textColor="@color/textPrimary" />
+                    android:textColor="?attr/colorOnSurface" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
                     android:contentDescription="@string/help_amp_support"
-                    app:tint="@color/textSecondary" />
+                    app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- About App -->
@@ -143,14 +145,14 @@
                     android:layout_weight="1"
                     android:text="@string/about_app"
                     android:textSize="16sp"
-                    android:textColor="@color/textPrimary" />
+                    android:textColor="?attr/colorOnSurface" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right"
                     android:contentDescription="@string/about_app"
-                    app:tint="@color/textSecondary" />
+                    app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- Logout -->

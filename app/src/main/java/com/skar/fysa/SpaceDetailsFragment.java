@@ -9,12 +9,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -92,7 +92,7 @@ public class SpaceDetailsFragment extends Fragment {
     private void setupDirections() {
         btnDirections.setOnClickListener(v -> {
             if (latitude == 0 && longitude == 0) {
-                Toast.makeText(requireContext(), "Location unavailable", Toast.LENGTH_SHORT).show();
+                Snackbar.make(requireView(), "Location unavailable", Snackbar.LENGTH_SHORT).show();
                 return;
             }
             String uri = "https://www.google.com/maps/dir/?api=1&destination=" + latitude + "," + longitude;
@@ -106,7 +106,7 @@ public class SpaceDetailsFragment extends Fragment {
         btnBook.setOnClickListener(v -> {
             FirebaseAuth auth = FirebaseAuth.getInstance();
             if (auth.getCurrentUser() == null) {
-                Toast.makeText(requireContext(), "You must be logged in to book a visit", Toast.LENGTH_SHORT).show();
+                Snackbar.make(requireView(), "You must be logged in to book a visit", Snackbar.LENGTH_SHORT).show();
                 return;
             }
 
@@ -131,8 +131,8 @@ public class SpaceDetailsFragment extends Fragment {
                             }
 
                             if (alreadyBooked) {
-                                Toast.makeText(requireContext(),
-                                        "You have already booked this space.", Toast.LENGTH_SHORT).show();
+                                Snackbar.make(requireView(),
+                                        "You have already booked this space.", Snackbar.LENGTH_SHORT).show();
                             } else {
                                 createNewBooking(userId);
                             }
@@ -140,9 +140,9 @@ public class SpaceDetailsFragment extends Fragment {
 
                         @Override
                         public void onCancelled(@NonNull DatabaseError error) {
-                            Toast.makeText(requireContext(),
+                            Snackbar.make(requireView(),
                                     "Failed to check bookings: " + error.getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                                    Snackbar.LENGTH_LONG).show();
                         }
                     });
         });
@@ -182,16 +182,16 @@ public class SpaceDetailsFragment extends Fragment {
             notifRef.setValue(notification)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(requireContext(),
-                                    "Visit booked successfully!", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(requireView(),
+                                    "Visit booked successfully!", Snackbar.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(requireContext(),
+                            Snackbar.make(requireView(),
                                     "Booking failed: " + Objects.requireNonNull(task.getException()).getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                                    Snackbar.LENGTH_LONG).show();
                         }
                     });
 
-        }).addOnFailureListener(e -> Toast.makeText(requireContext(),
-                "Failed to fetch username: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        }).addOnFailureListener(e -> Snackbar.make(requireView(),
+                "Failed to fetch username: " + e.getMessage(), Snackbar.LENGTH_SHORT).show());
     }
 }

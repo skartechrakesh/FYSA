@@ -1,17 +1,17 @@
 package com.skar.fysa;
 
-import android.graphics.Color;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.BarChart;
@@ -24,6 +24,7 @@ import com.google.android.gms.ads.AdLoader;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -57,8 +58,9 @@ public class BookingsOverviewFragment extends Fragment {
             new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
     private NativeAd loadedNativeAd;
-
-    public BookingsOverviewFragment() {}
+    private final ArrayList<DataSnapshot> allNotifications = new ArrayList<>();
+    private int loadedCount = 0;
+    private static final int BATCH_SIZE = 5;
 
     @Nullable
     @Override
@@ -76,14 +78,13 @@ public class BookingsOverviewFragment extends Fragment {
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            String ownerId = currentUser.getUid();
             notifRef = FirebaseDatabase.getInstance(DB_URL)
                     .getReference("notifications")
-                    .child(ownerId);
+                    .child(currentUser.getUid());
             loadNotifications();
         } else {
             clearUI();
-            Toast.makeText(getContext(), "Please login to view bookings", Toast.LENGTH_SHORT).show();
+            showSnackbar("Please login to view bookings");
         }
 
         return view;
@@ -105,33 +106,25 @@ public class BookingsOverviewFragment extends Fragment {
                     TextView body = adView.findViewById(R.id.ad_body);
                     Button cta = adView.findViewById(R.id.ad_call_to_action);
 
-                    // Map views
                     adView.setHeadlineView(headline);
                     adView.setBodyView(body);
                     adView.setCallToActionView(cta);
 
-                    // Populate ad
                     headline.setText(nativeAd.getHeadline());
                     if (nativeAd.getBody() != null) {
                         body.setText(nativeAd.getBody());
                         body.setVisibility(View.VISIBLE);
-                    } else {
-                        body.setVisibility(View.GONE);
-                    }
+                    } else body.setVisibility(View.GONE);
 
                     if (nativeAd.getCallToAction() != null) {
                         cta.setText(nativeAd.getCallToAction());
                         cta.setVisibility(View.VISIBLE);
-                    } else {
-                        cta.setVisibility(View.GONE);
-                    }
+                    } else cta.setVisibility(View.GONE);
 
                     adView.setNativeAd(nativeAd);
-
                     nativeAdContainer.removeAllViews();
                     nativeAdContainer.addView(adView);
-                })
-                .build();
+                }).build();
 
         adLoader.loadAd(new AdRequest.Builder().build());
     }
@@ -142,104 +135,133 @@ public class BookingsOverviewFragment extends Fragment {
         notifListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                bookingsListContainer.removeAllViews();
-                ArrayList<NotificationModel> notifications = new ArrayList<>();
+                allNotifications.clear();
                 Map<Integer, Integer> monthlyCounts = new HashMap<>();
 
-                for (DataSnapshot notifSnap : snapshot.getChildren()) {
-                    NotificationModel notif = notifSnap.getValue(NotificationModel.class);
-                    if (notif == null) continue;
+                for (DataSnapshot ds : snapshot.getChildren()) {
+                    allNotifications.add(ds);
 
-                    notifications.add(notif);
-
-                    // Count per month
-                    try {
-                        Date date = sdf.parse(notif.getBookingDate());
-                        if (date != null) {
-                            Calendar cal = Calendar.getInstance();
-                            cal.setTime(date);
-                            int month = cal.get(Calendar.MONTH);
-                            monthlyCounts.put(month, monthlyCounts.getOrDefault(month, 0) + 1);
-                        }
-                    } catch (ParseException ignored) {}
-
-                    View row = LayoutInflater.from(getContext())
-                            .inflate(R.layout.item_booking_row, bookingsListContainer, false);
-
-                    TextView tvName = row.findViewById(R.id.tvBookingName);
-                    TextView tvUsername = row.findViewById(R.id.tvBookingUsername);
-                    TextView tvDate = row.findViewById(R.id.tvBookingDate);
-                    TextView tvType = row.findViewById(R.id.tvBookingType);
-                    TextView tvStatus = row.findViewById(R.id.tvBookingStatus);
-                    Button btnMarkRead = row.findViewById(R.id.btnAction);
-
-                    tvName.setText(notif.getSpaceName());
-                    tvUsername.setText("Booked by: " + notif.getUsername());
-                    tvDate.setText(notif.getBookingDate());
-                    tvType.setText(notif.getSpaceType() != null ? notif.getSpaceType() : "N/A");
-
-                    if (!notif.isRead()) {
-                        tvStatus.setText("Visit Booked");
-                        btnMarkRead.setVisibility(View.VISIBLE);
-                        btnMarkRead.setText("Mark as Read");
-
-                        btnMarkRead.setOnClickListener(v ->
-                                notifSnap.getRef().child("read").setValue(true)
-                                        .addOnSuccessListener(aVoid -> {
-                                            tvStatus.setText("Visit Accepted");
-                                            btnMarkRead.setVisibility(View.GONE);
-                                        })
-                                        .addOnFailureListener(e ->
-                                                Toast.makeText(getContext(),
-                                                        "Failed to mark as read: " + e.getMessage(),
-                                                        Toast.LENGTH_SHORT).show()
-                                        )
-                        );
-                    } else {
-                        tvStatus.setText("Visit Accepted");
-                        btnMarkRead.setVisibility(View.GONE);
+                    String dateStr = ds.child("bookingDate").getValue(String.class);
+                    if (dateStr != null) {
+                        try {
+                            Date date = sdf.parse(dateStr);
+                            if (date != null) {
+                                Calendar cal = Calendar.getInstance();
+                                cal.setTime(date);
+                                int month = cal.get(Calendar.MONTH);
+                                monthlyCounts.put(month, monthlyCounts.getOrDefault(month, 0) + 1);
+                            }
+                        } catch (ParseException ignored) {}
                     }
-
-                    bookingsListContainer.addView(row);
                 }
 
-                // Sort notifications by date descending
-                Collections.sort(notifications, (n1, n2) -> {
+                // Sort latest first
+                Collections.sort(allNotifications, (n1, n2) -> {
                     try {
-                        Date d1 = sdf.parse(n1.getBookingDate());
-                        Date d2 = sdf.parse(n2.getBookingDate());
+                        Date d1 = sdf.parse(n1.child("bookingDate").getValue(String.class));
+                        Date d2 = sdf.parse(n2.child("bookingDate").getValue(String.class));
                         if (d1 != null && d2 != null) return d2.compareTo(d1);
                     } catch (ParseException ignored) {}
                     return 0;
                 });
 
+                bookingsListContainer.removeAllViews();
+                loadedCount = 0;
+                loadNextBatch(getLayoutInflater());
                 updateBarChart(monthlyCounts);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-                    Toast.makeText(getContext(),
-                            "Failed to fetch notifications: " + error.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                }
+                showSnackbar("Failed to fetch notifications: " + error.getMessage());
             }
         };
 
         notifRef.addValueEventListener(notifListener);
     }
 
+    private void loadNextBatch(LayoutInflater inflater) {
+        int end = Math.min(loadedCount + BATCH_SIZE, allNotifications.size());
+
+        for (int i = loadedCount; i < end; i++) {
+            addBookingRow(inflater, allNotifications.get(i));
+        }
+
+        loadedCount = end;
+
+        if (loadedCount < allNotifications.size()) addLoadMoreLink(inflater);
+    }
+
+    private void addBookingRow(LayoutInflater inflater, DataSnapshot notifSnap) {
+        View row = inflater.inflate(R.layout.item_bookings_overview_list, bookingsListContainer, false);
+
+        TextView tvName = row.findViewById(R.id.tvBookingName);
+        TextView tvUsername = row.findViewById(R.id.tvBookingUsername);
+        TextView tvDate = row.findViewById(R.id.tvBookingDate);
+        TextView tvType = row.findViewById(R.id.tvBookingType);
+        TextView tvStatus = row.findViewById(R.id.tvBookingStatus);
+        Button btnMarkRead = row.findViewById(R.id.btnAction);
+
+        tvName.setText(notifSnap.child("spaceName").getValue(String.class));
+        tvUsername.setText("Booked by: " + notifSnap.child("username").getValue(String.class));
+        tvDate.setText(notifSnap.child("bookingDate").getValue(String.class));
+        tvType.setText(notifSnap.child("spaceType").getValue(String.class));
+
+        Boolean read = notifSnap.child("read").getValue(Boolean.class);
+        if (read == null) read = false;
+
+        if (!read) {
+            tvStatus.setText("Visit Booked");
+            btnMarkRead.setVisibility(View.VISIBLE);
+            btnMarkRead.setText("Mark as Read");
+            btnMarkRead.setOnClickListener(v ->
+                    notifSnap.getRef().child("read").setValue(true)
+                            .addOnSuccessListener(aVoid -> {
+                                tvStatus.setText("Visit Accepted");
+                                btnMarkRead.setVisibility(View.GONE);
+                            }));
+        } else {
+            tvStatus.setText("Visit Accepted");
+            btnMarkRead.setVisibility(View.GONE);
+        }
+
+        bookingsListContainer.addView(row);
+    }
+
+    private void addLoadMoreLink(LayoutInflater inflater) {
+        View existing = bookingsListContainer.findViewWithTag("load_more_link");
+        if (existing != null) bookingsListContainer.removeView(existing);
+
+        TextView loadMore = new TextView(requireContext());
+        loadMore.setText("Load More");
+        loadMore.setTag("load_more_link");
+        loadMore.setTextSize(16f);
+        loadMore.setPadding(0, 24, 0, 24);
+        loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
+
+        loadMore.setOnClickListener(v -> {
+            bookingsListContainer.removeView(v);
+            loadNextBatch(inflater);
+        });
+
+        bookingsListContainer.addView(loadMore);
+    }
+
     private void updateBarChart(Map<Integer, Integer> monthlyCounts) {
         ArrayList<BarEntry> entries = new ArrayList<>();
         String[] monthLabels = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 12; i++)
             entries.add(new BarEntry(i, monthlyCounts.getOrDefault(i, 0)));
-        }
 
         BarDataSet dataSet = new BarDataSet(entries, "Bookings per Month");
-        int textColor = requireContext().getColor(R.color.textPrimary);
-        dataSet.setColor(Color.parseColor("#3F51B5"));
+        dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.linkText));
+
+        TypedValue typedValue = new TypedValue();
+        requireContext().getTheme().resolveAttribute(R.attr.colorOnSurface, typedValue, true);
+        int textColor = typedValue.data;
+
         dataSet.setValueTextColor(textColor);
         dataSet.setValueTextSize(10f);
 
@@ -263,7 +285,6 @@ public class BookingsOverviewFragment extends Fragment {
         barChart.getAxisLeft().setTextColor(textColor);
         barChart.getAxisRight().setTextColor(textColor);
         barChart.getLegend().setTextColor(textColor);
-
         barChart.invalidate();
     }
 
@@ -271,6 +292,11 @@ public class BookingsOverviewFragment extends Fragment {
         bookingsListContainer.removeAllViews();
         barChart.clear();
         barChart.invalidate();
+    }
+
+    private void showSnackbar(String message) {
+        if (getView() != null)
+            Snackbar.make(getView(), message, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override

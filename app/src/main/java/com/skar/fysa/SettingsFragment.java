@@ -70,6 +70,7 @@ public class SettingsFragment extends Fragment {
         view.findViewById(R.id.itemLogout).setOnClickListener(v -> logout());
     }
 
+    // Helper method to open a fragment
     private void openFragment(Fragment fragment) {
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()

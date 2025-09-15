@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgColor">
+    android:background="?android:attr/colorBackground"
+    tools:context=".SpaceDetailsFragment">
 
     <!-- Scrollable content -->
     <ScrollView
@@ -29,7 +30,7 @@
                 android:text="@string/Space_Name"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="8dp"/>
 
             <!-- Type -->
@@ -38,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/type"
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="4dp"/>
 
             <!-- Owner Name -->
@@ -47,7 +48,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="4dp"/>
 
             <!-- Address -->
@@ -56,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="4dp"/>
 
             <!-- Contact -->
@@ -65,7 +66,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="4dp"/>
 
             <!-- Distance -->
@@ -74,7 +75,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnSurface"
                 android:paddingBottom="12dp"/>
 
             <!-- Buttons -->
@@ -82,7 +83,7 @@
                 android:id="@+id/btnDirections"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
+                android:textColor="@color/black"
                 android:backgroundTint="@color/btnSecondary"
                 android:text="@string/get_directions_in_google_maps"
                 tools:ignore="VisualLintButtonSize" />
@@ -92,7 +93,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/book_visit"
-                android:textColor="@color/textPrimary"
+                android:textColor="@color/black"
                 android:backgroundTint="@color/light_green_500"
                 android:layout_marginTop="12dp"
                 tools:ignore="VisualLintButtonSize" />

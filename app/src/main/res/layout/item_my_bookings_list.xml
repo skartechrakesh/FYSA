@@ -4,45 +4,35 @@
     android:padding="12dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/bgColor">
+    android:background="?android:attr/colorBackground">
 
     <!-- Booking Name -->
     <TextView
         android:id="@+id/tvBookingName"
         android:textStyle="bold"
         android:textSize="16sp"
-        android:textColor="@color/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <!-- Booking Type / Space Type -->
     <TextView
         android:id="@+id/tvBookingType"
-        android:textColor="@color/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <!-- Booking Date -->
     <TextView
         android:id="@+id/tvBookingDate"
-        android:textColor="@color/textPrimary"
+        android:textColor="?attr/colorOnSurface"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-
-    <!-- Booking Time -->
-    <TextView
-        android:id="@+id/tvCreatedAt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/created_at"
-        android:textSize="14sp"
-        android:visibility="gone"
-        android:layout_marginTop="4dp"/>
 
     <!-- Booking Status -->
     <TextView
         android:id="@+id/tvBookingStatus"
-        android:textColor="@color/textPrimary"
+        android:textColor="?attr/colorSuccess"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
@@ -52,7 +42,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:backgroundTint="@color/btnSecondary"
+        android:backgroundTint="?attr/colorSecondary"
         android:text="@string/cancel_visit"
         android:textColor="@color/textPrimary" />
 </LinearLayout>

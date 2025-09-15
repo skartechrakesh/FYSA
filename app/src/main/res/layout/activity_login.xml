@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgColor"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:padding="24dp"
     tools:context=".LoginActivity">
 
@@ -16,10 +17,10 @@
         android:contentDescription="@string/toggle_theme"
         android:padding="8dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_moon"
+        android:src="@drawable/ic_sun"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/btnOutlineText"
+        app:tint="?attr/colorOnBackground"
         tools:ignore="TouchTargetSizeCheck" />
 
     <ScrollView
@@ -42,7 +43,7 @@
                 android:id="@+id/appLogo"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="4dp"
                 android:contentDescription="@string/app_logo"
                 android:src="@drawable/logo"
                 tools:ignore="ImageContrastCheck" />
@@ -51,10 +52,10 @@
                 android:id="@+id/appTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="2dp"
                 android:letterSpacing="0.55"
                 android:text="@string/app_name"
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="30sp"
                 android:textStyle="bold" />
 
@@ -62,9 +63,9 @@
                 android:id="@+id/appSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="40dp"
+                android:layout_marginBottom="20dp"
                 android:text="@string/app_tagline"
-                android:textColor="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="15sp" />
 
             <LinearLayout
@@ -79,17 +80,18 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
                     android:hint="@string/email"
-                    app:boxStrokeColor="@color/grey_stroke"
-                    app:hintTextColor="@color/textSecondary">
+                    app:boxStrokeColor="?attr/colorOnBackground"
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -100,17 +102,17 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/password"
-                    app:boxStrokeColor="@color/grey_stroke"
+                    app:boxStrokeColor="?attr/colorOnBackground"
                     app:endIconMode="password_toggle"
-                    app:hintTextColor="@color/textSecondary">
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -121,9 +123,8 @@
                     android:layout_gravity="end"
                     android:layout_marginTop="8dp"
                     android:text="@string/forgot_password"
-                    android:textColor="@color/linkText"
-                    android:textSize="14sp"
-                    tools:ignore="TextContrastCheck" />
+                    android:textColor="?attr/colorPrimaryVariant"
+                    android:textSize="14sp" />
 
                 <Button
                     android:id="@+id/btnLoginSubmit"
@@ -133,34 +134,27 @@
                     android:layout_marginStart="48dp"
                     android:layout_marginEnd="48dp"
                     android:layout_marginTop="22dp"
-                    android:backgroundTint="@color/btnSecondary"
+                    android:backgroundTint="?attr/colorSurface"
                     android:text="@string/login"
-                    android:textColor="@color/textPrimary"
+                    android:textColor="?attr/colorOnSurface"
                     app:cornerRadius="12dp"
                     tools:ignore="VisualLintButtonSize" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="14dp"
                     android:text="@string/or"
-                    android:textColor="@color/textSecondary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.gms.common.SignInButton
-                    android:id="@+id/btnGoogleSignIn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal" />
+                    android:textAlignment="center"
+                    android:textColor="?attr/colorSecondaryVariant"
+                    android:textSize="14sp" />
 
                 <ProgressBar
                     android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
                     android:visibility="gone" />
 
@@ -169,11 +163,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="16dp"
                     android:text="@string/don_t_have_an_account_register"
-                    android:textColor="@color/linkText"
-                    android:textSize="14sp"
-                    tools:ignore="TextContrastCheck" />
+                    android:textColor="?attr/colorPrimaryVariant"
+                    android:textSize="14sp" />
 
             </LinearLayout>
         </LinearLayout>

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -14,7 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -30,6 +30,7 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
@@ -47,25 +48,33 @@ import java.util.Objects;
 
 public class SpaceFormFragment extends Fragment {
 
+    // 🔹 UI Components
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
-    private Button btnSubmit;
-    private MapView mapView;
-    private TextView txtCategory;
     private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
+    private Button btnSubmit;
+    private TextView txtCategory;
     private FloatingActionButton btnMyLocation;
+    private MapView mapView;
+    private View fragmentView;
 
-    private DatabaseReference userSpacesRef, globalSpacesRef;
+    // 🔹 Firebase
+    private DatabaseReference globalSpacesRef;
     private String category;
 
+    // 🔹 Ads
     private InterstitialAd mInterstitialAd;
     private final Handler adHandler = new Handler();
 
+    // 🔹 Location Permission Launcher
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) moveToCurrentLocation();
-                else Toast.makeText(getContext(), "Location permission denied", Toast.LENGTH_SHORT).show();
+                else Snackbar.make(fragmentView, "Location permission denied", Snackbar.LENGTH_SHORT).show();
             });
 
+    // ---------------------------------------------------------------------------------------------
+    // Lifecycle
+    // ---------------------------------------------------------------------------------------------
     @SuppressLint("SetTextI18n")
     @Nullable
     @Override
@@ -73,59 +82,101 @@ public class SpaceFormFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_space_form, container, false);
+        fragmentView = inflater.inflate(R.layout.fragment_space_form, container, false);
 
-        // OSMDroid setup
+        // Setup OSMDroid
         Configuration.getInstance().load(requireContext(),
                 requireContext().getSharedPreferences("osmdroid_prefs", 0));
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
 
-        // Get category argument
+        // Get category
         category = getArguments() != null ? getArguments().getString("CATEGORY", "Unknown") : "Unknown";
 
-        // Firebase references
+        // Firebase reference
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Toast.makeText(getContext(), "You must be logged in", Toast.LENGTH_SHORT).show();
-            return view;
+            Snackbar.make(fragmentView, "You must be logged in", Snackbar.LENGTH_SHORT).show();
+            return fragmentView;
         }
-
-        String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
         FirebaseDatabase db = FirebaseDatabase.getInstance(
                 "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
         );
-        userSpacesRef = db.getReference("users").child(uid).child("space_details");
         globalSpacesRef = db.getReference("spaces");
 
-        bindViews(view);
+        // Init UI
+        bindViews(fragmentView);
         setListeners();
         setupBackHandling();
         initMap();
         requestLocationPermission();
 
+        // UI updates
         txtCategory.setText("Category: " + category);
-        FysaApp.setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
+        setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
 
+        // Load Ads & User Data
         loadInterstitialAd();
-        loadDefaultUserData(); // Load default owner name & contact
+        loadDefaultUserData();
 
-        return view;
+        return fragmentView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        mapView.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // View Binding & Styling
+    // ---------------------------------------------------------------------------------------------
     private void bindViews(View view) {
         inputName = view.findViewById(R.id.inputName);
         inputOwnerName = view.findViewById(R.id.inputOwnerName);
         inputContact = view.findViewById(R.id.inputContact);
         inputAddress = view.findViewById(R.id.inputAddress);
-        btnSubmit = view.findViewById(R.id.btnSubmit);
-        mapView = view.findViewById(R.id.mapView);
-        txtCategory = view.findViewById(R.id.txtCategory);
-        btnMyLocation = view.findViewById(R.id.btnMyLocation);
+
         nameLayout = view.findViewById(R.id.nameLayout);
         ownerNameLayout = view.findViewById(R.id.ownerNameLayout);
         contactLayout = view.findViewById(R.id.contactLayout);
         addressLayout = view.findViewById(R.id.addressLayout);
+
+        btnSubmit = view.findViewById(R.id.btnSubmit);
+        txtCategory = view.findViewById(R.id.txtCategory);
+        btnMyLocation = view.findViewById(R.id.btnMyLocation);
+        mapView = view.findViewById(R.id.mapView);
     }
 
+    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+
+            input.setBoxStrokeColorStateList(states);
+        }
+    }
+
+
+    // ---------------------------------------------------------------------------------------------
+    // Listeners
+    // ---------------------------------------------------------------------------------------------
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
@@ -160,8 +211,6 @@ public class SpaceFormFragment extends Fragment {
             }
             return false;
         });
-
-        mapView.setOnClickListener(v -> {});
     }
 
     private void setupBackHandling() {
@@ -179,6 +228,9 @@ public class SpaceFormFragment extends Fragment {
                 });
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Map & Location
+    // ---------------------------------------------------------------------------------------------
     private void initMap() {
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
@@ -199,22 +251,29 @@ public class SpaceFormFragment extends Fragment {
         LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         try {
             Location last = null;
-            if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER))
+
+            if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (last == null && lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
+            }
+            if (last == null && lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
 
             if (last != null) {
                 GeoPoint me = new GeoPoint(last.getLatitude(), last.getLongitude());
                 mapView.getController().setCenter(me);
             } else {
-                Toast.makeText(getContext(), "Unable to fetch last location", Toast.LENGTH_SHORT).show();
+                Snackbar.make(fragmentView, "Enable GPS to fetch location.", Snackbar.LENGTH_LONG).show();
             }
-        } catch (SecurityException e) {
-            Toast.makeText(getContext(), "Location permission missing", Toast.LENGTH_SHORT).show();
+
+        } catch (Exception e) {
+            Snackbar.make(fragmentView, "Failed to fetch location: " + e.getMessage(), Snackbar.LENGTH_SHORT).show();
         }
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Form Handling
+    // ---------------------------------------------------------------------------------------------
     private void submitForm() {
         String name = Objects.requireNonNull(inputName.getText()).toString().trim();
         String ownerName = Objects.requireNonNull(inputOwnerName.getText()).toString().trim();
@@ -222,13 +281,13 @@ public class SpaceFormFragment extends Fragment {
         String address = Objects.requireNonNull(inputAddress.getText()).toString().trim();
 
         if (name.isEmpty() || ownerName.isEmpty() || contact.isEmpty() || address.isEmpty()) {
-            Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+            Snackbar.make(fragmentView, "Please fill all fields", Snackbar.LENGTH_SHORT).show();
             return;
         }
 
         GeoPoint center = (GeoPoint) mapView.getMapCenter();
         if (center == null) {
-            Toast.makeText(getContext(), "Map center not available", Toast.LENGTH_SHORT).show();
+            Snackbar.make(fragmentView, "Map center not available", Snackbar.LENGTH_SHORT).show();
             return;
         }
 
@@ -237,7 +296,7 @@ public class SpaceFormFragment extends Fragment {
 
         String spaceId = globalSpacesRef.child(category).push().getKey();
         if (spaceId == null) {
-            Toast.makeText(getContext(), "Failed to create ID", Toast.LENGTH_SHORT).show();
+            Snackbar.make(fragmentView, "Failed to create ID", Snackbar.LENGTH_SHORT).show();
             return;
         }
 
@@ -248,23 +307,21 @@ public class SpaceFormFragment extends Fragment {
 
         globalSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(globalTask -> {
             if (globalTask.isSuccessful()) {
-                userSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(userTask -> {
-                    if (userTask.isSuccessful()) {
-                        Toast.makeText(getContext(), category + " saved successfully!", Toast.LENGTH_SHORT).show();
-                        getParentFragmentManager().popBackStack();
-                    } else {
-                        Toast.makeText(getContext(), "User save failed: " + Objects.requireNonNull(userTask.getException()).getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
+                Snackbar.make(fragmentView, category + " saved successfully!", Snackbar.LENGTH_SHORT).show();
+                getParentFragmentManager().popBackStack();
             } else {
-                Toast.makeText(getContext(), "Global save failed: " + Objects.requireNonNull(globalTask.getException()).getMessage(), Toast.LENGTH_LONG).show();
+                Snackbar.make(fragmentView, "Save failed: " +
+                        Objects.requireNonNull(globalTask.getException()).getMessage(), Snackbar.LENGTH_LONG).show();
             }
         });
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Firebase & Ads
+    // ---------------------------------------------------------------------------------------------
     private void loadInterstitialAd() {
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712", // Replace with your Ad Unit ID
+                "ca-app-pub-3940256099942544/1033173712", // TODO: Replace with your Ad Unit ID
                 new AdRequest.Builder().build(),
                 new InterstitialAdLoadCallback() {
                     @Override
@@ -299,20 +356,8 @@ public class SpaceFormFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(), "Failed to load user data: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                Snackbar.make(fragmentView, "Failed to load user data: " + error.getMessage(), Snackbar.LENGTH_SHORT).show();
             }
         });
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mapView.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mapView.onPause();
     }
 }

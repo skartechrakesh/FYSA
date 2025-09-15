@@ -1,22 +1,24 @@
 package com.skar.fysa;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
-
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -28,6 +30,8 @@ public class OwnerDashboardActivity extends AppCompatActivity {
 
     private static final String KEY_USERNAME = "username";
     private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+    private static final String PREFS_NAME = "theme_preference";
+    private static final String KEY_THEME_MODE = "theme_mode";
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
@@ -35,14 +39,16 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     private TextView tvWelcome, drawerUserName;
     private long backPressedTime = 0;
 
-    private AdView adViewBanner; // Banner Ad
+    private AdView adViewBanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        FysaApp.applySavedTheme();
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        int savedTheme = sharedPreferences.getInt(KEY_THEME_MODE, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        AppCompatDelegate.setDefaultNightMode(savedTheme);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_owner_dashboard);
-        FysaApp.setStatusBarColor(this);
 
         initViews();
         setupTopBar();
@@ -50,8 +56,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         setupBottomNavigation();
         loadUsernameFromDatabase();
         setupBackPressHandler();
-
-        setupBannerAd(); // Initialize banner
+        setupBannerAd();
 
         if (savedInstanceState == null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
@@ -67,8 +72,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
         tvWelcome = findViewById(R.id.tvWelcome);
         drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvOwnerName);
-
-        adViewBanner = findViewById(R.id.adViewBanner); // Link AdView
+        adViewBanner = findViewById(R.id.adViewBanner);
     }
 
     private void setupBannerAd() {
@@ -79,9 +83,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     private void setupTopBar() {
         btnHamburger.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
         btnLogout.setOnClickListener(v -> showLogoutSnackbar());
-
-        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
-        btnThemeToggle.setOnClickListener(v -> FysaApp.toggleThemeWithAnimation(OwnerDashboardActivity.this, btnThemeToggle));
+        btnThemeToggle.setOnClickListener(v -> toggleTheme(this));
     }
 
     private void setupDrawerActions() {
@@ -92,40 +94,29 @@ public class OwnerDashboardActivity extends AppCompatActivity {
             if (itemId == R.id.nav_add_new_space0) {
                 fragment = new AddNewSpaceFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
-
             } else if (itemId == R.id.nav_manage_spaces) {
                 fragment = new ManageSpacesFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_manage_spaces);
-
             } else if (itemId == R.id.nav_bookings_dashboard) {
                 fragment = new BookingsOverviewFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_bookings);
-
-            } else if (itemId == R.id.nav_contact_us) {
-                fragment = new ContactUsFragment();
-                openFragment(fragment);
-                drawerLayout.closeDrawer(GravityCompat.START);
-                return true;
-
             } else if (itemId == R.id.nav_faq) {
                 fragment = new FaqFragment();
                 openFragment(fragment);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
-
             } else if (itemId == R.id.nav_settings) {
                 fragment = new SettingsFragment();
                 openFragment(fragment);
                 bottomNavigationView.setSelectedItemId(R.id.nav_preferences);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
-
             } else if (itemId == R.id.nav_logout) {
                 showLogoutSnackbar();
                 return true;
             }
 
-            if (fragment != null && itemId != R.id.nav_contact_us && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
+            if (fragment != null && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
                 replaceFragment(fragment);
             }
 
@@ -157,6 +148,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     }
 
     private void replaceFragment(Fragment fragment) {
+        getSupportFragmentManager().popBackStack();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragmentContainer, fragment);
         transaction.commit();
@@ -181,10 +173,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
 
     private void performLogout() {
         FirebaseAuth.getInstance().signOut();
-        if (FysaApp.getAppContext() != null) {
-            FysaApp.getAppContext().getSharedPreferences("theme_prefs", MODE_PRIVATE)
-                    .edit().remove(KEY_USERNAME).apply();
-        }
+        getSharedPreferences("theme_prefs", MODE_PRIVATE).edit().remove(KEY_USERNAME).apply();
         startActivity(new Intent(this, LoginActivity.class));
         finish();
     }
@@ -207,15 +196,12 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 String nameFromDb = task.getResult().getValue(String.class);
                 if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
 
-                FysaApp.getAppContext()
-                        .getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                getSharedPreferences("theme_prefs", MODE_PRIVATE)
                         .edit()
                         .putString(KEY_USERNAME, displayName)
                         .apply();
             } else {
-                displayName = FysaApp.getAppContext()
-                        .getSharedPreferences("theme_prefs", MODE_PRIVATE)
-                        .getString(KEY_USERNAME, "User");
+                displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE).getString(KEY_USERNAME, "User");
             }
 
             tvWelcome.setText("Hi, " + displayName);
@@ -256,11 +242,15 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        FysaApp.applySavedTheme();
-        FysaApp.setStatusBarColor(this);
-        FysaApp.updateThemeIcon(this, btnThemeToggle, false);
+    private void toggleTheme(Context context) {
+        int nightMode = AppCompatDelegate.getDefaultNightMode();
+        int newNightMode = (nightMode == AppCompatDelegate.MODE_NIGHT_YES) ?
+                AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES;
+        SharedPreferences sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(KEY_THEME_MODE, newNightMode);
+        editor.apply();
+        AppCompatDelegate.setDefaultNightMode(newNightMode);
+        recreate();
     }
 }

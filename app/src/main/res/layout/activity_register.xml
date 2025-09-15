@@ -4,11 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bgColor"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:padding="24dp"
     tools:context=".RegisterActivity">
 
-    <!-- Theme Toggle Button (Top Right) -->
     <ImageButton
         android:id="@+id/btnThemeToggle"
         android:layout_width="40dp"
@@ -17,13 +17,12 @@
         android:contentDescription="@string/toggle_theme"
         android:padding="8dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_moon"
+        android:src="@drawable/ic_sun"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/btnOutlineText"
+        app:tint="?attr/colorOnBackground"
         tools:ignore="TouchTargetSizeCheck" />
 
-    <!-- Scrollable Form -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -40,7 +39,6 @@
             android:orientation="vertical"
             android:paddingTop="20dp">
 
-            <!-- Logo -->
             <ImageView
                 android:id="@+id/appLogo"
                 android:layout_width="150dp"
@@ -50,7 +48,6 @@
                 android:src="@drawable/logo"
                 tools:ignore="ImageContrastCheck" />
 
-            <!-- Titles -->
             <TextView
                 android:id="@+id/appTitle"
                 android:layout_width="wrap_content"
@@ -58,7 +55,7 @@
                 android:layout_marginBottom="2dp"
                 android:letterSpacing="0.55"
                 android:text="@string/app_name"
-                android:textColor="@color/textPrimary"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="30sp"
                 android:textStyle="bold" />
 
@@ -68,7 +65,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:text="@string/app_tagline"
-                android:textColor="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="15sp" />
 
             <TextView
@@ -77,11 +74,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:text="@string/create_account"
-                android:textColor="@color/textSecondary"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <!-- Account Type Toggle -->
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/toggleAccountType"
                 android:layout_width="wrap_content"
@@ -109,33 +105,30 @@
                     android:textAllCaps="false" />
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
-            <!-- Form Container -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Name -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/nameLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/full_name"
-                    app:boxStrokeColor="@color/textPrimary"
-                    app:hintTextColor="@color/textSecondary">
+                    app:boxStrokeColor="?attr/colorOnBackground"
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPersonName"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Username -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/usernameLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -143,20 +136,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/username"
-                    app:boxStrokeColor="@color/textPrimary"
-                    app:hintTextColor="@color/textSecondary">
+                    app:boxStrokeColor="?attr/colorOnBackground"
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputUsername"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Contact -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/contactLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -164,20 +156,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/contact_number"
-                    app:boxStrokeColor="@color/textPrimary"
-                    app:hintTextColor="@color/textSecondary">
+                    app:boxStrokeColor="?attr/colorOnBackground"
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputContact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="phone"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Email -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/emailLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -185,20 +176,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/email"
-                    app:boxStrokeColor="@color/textPrimary"
-                    app:hintTextColor="@color/textSecondary">
+                    app:boxStrokeColor="?attr/colorOnBackground"
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Password -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/passwordLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -206,21 +196,20 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/password"
-                    app:boxStrokeColor="@color/textPrimary"
+                    app:boxStrokeColor="?attr/colorOnBackground"
                     app:endIconMode="password_toggle"
-                    app:hintTextColor="@color/textSecondary">
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Confirm Password -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/confirmPasswordLayout"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -228,36 +217,34 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:hint="@string/confirm_password"
-                    app:boxStrokeColor="@color/textPrimary"
+                    app:boxStrokeColor="?attr/colorOnBackground"
                     app:endIconMode="password_toggle"
-                    app:hintTextColor="@color/textSecondary">
+                    app:hintTextColor="?attr/colorOnSurface">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inputConfirmPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:textColor="@color/textPrimary"
-                        android:textColorHint="@color/textSecondary"
+                        android:textColor="?attr/colorOnBackground"
+                        android:textColorHint="?attr/colorOnSurface"
                         tools:ignore="VisualLintTextFieldSize" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Register Button -->
                 <Button
                     android:id="@+id/btnRegisterSubmit"
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="80dp"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginEnd="80dp"
-                    android:backgroundTint="@color/btnSecondary"
+                    android:layout_marginStart="48dp"
+                    android:layout_marginTop="22dp"
+                    android:layout_marginEnd="48dp"
+                    android:backgroundTint="?attr/colorSurface"
                     android:text="@string/register"
-                    android:textColor="@color/black"
+                    android:textColor="?attr/colorOnSurface"
                     app:cornerRadius="12dp"
                     tools:ignore="VisualLintButtonSize" />
 
-                <!-- Progress Bar -->
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="48dp"
@@ -273,17 +260,9 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/or"
                     android:textAlignment="center"
-                    android:textColor="@color/textSecondary"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="16sp" />
 
-                <com.google.android.gms.common.SignInButton
-                    android:id="@+id/btnGoogleRegister"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp" />
-
-                <!-- Login Link -->
                 <TextView
                     android:id="@+id/linkLogin"
                     android:layout_width="wrap_content"
@@ -291,7 +270,7 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
                     android:text="@string/already_have_account"
-                    android:textColor="@color/linkText"
+                    android:textColor="?attr/colorPrimaryVariant"
                     android:textSize="14sp" />
 
             </LinearLayout>

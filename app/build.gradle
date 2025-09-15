@@ -19,6 +19,11 @@ android {
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // Ensure native libs are aligned properly
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
     }
 
     buildTypes {
@@ -32,6 +37,13 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+
+    // Fix 16 KB alignment issue
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 }
 
@@ -55,7 +67,6 @@ dependencies {
     // Google Play Services
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
-    implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
     // Firebase (BOM for version alignment)
     implementation platform('com.google.firebase:firebase-bom:34.2.0')
@@ -78,6 +89,10 @@ dependencies {
 
     // Google AdMob
     implementation 'com.google.android.gms:play-services-ads:24.5.0'
+
+    // Extra imports
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'androidx.annotation:annotation:1.6.0'
 
     // Tests
     testImplementation libs.junit

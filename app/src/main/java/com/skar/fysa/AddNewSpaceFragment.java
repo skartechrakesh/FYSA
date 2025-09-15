@@ -41,6 +41,7 @@ public class AddNewSpaceFragment extends Fragment {
     private void openForm(String category) {
         if (getActivity() == null) return;
 
+        // Create new SpaceFormFragment and pass category
         SpaceFormFragment fragment = new SpaceFormFragment();
         Bundle args = new Bundle();
         args.putString("CATEGORY", category);
