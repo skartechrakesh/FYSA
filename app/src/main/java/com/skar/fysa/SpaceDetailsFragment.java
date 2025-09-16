@@ -24,16 +24,18 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
-    private TextView tvName, tvType, tvOwnerName, tvAddress, tvContact, tvDistance;
+    private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance;
     private Button btnDirections, btnBook;
 
     private Space space;
-    private String spaceId, spaceName, spaceType, ownerId;
+    private String spaceId, spaceName, ownerId;
     private double latitude, longitude;
 
     private static final String DB_URL =
@@ -47,7 +49,6 @@ public class SpaceDetailsFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_space_details, container, false);
 
         tvName = view.findViewById(R.id.tvName);
-        tvType = view.findViewById(R.id.tvType);
         tvOwnerName = view.findViewById(R.id.tvOwnerName);
         tvAddress = view.findViewById(R.id.tvAddress);
         tvContact = view.findViewById(R.id.tvContact);
@@ -70,23 +71,23 @@ public class SpaceDetailsFragment extends Fragment {
     private void loadSpace() {
         spaceId = space.getId();
         spaceName = space.getName();
-        spaceType = space.getType();
         ownerId = space.getOwnerId();
         latitude = space.getLatitude();
         longitude = space.getLongitude();
 
         tvName.setText("Space Name: " + spaceName);
-        tvType.setText("Type: " + spaceType);
         tvOwnerName.setText("Owner: " + space.getOwnerName());
         tvAddress.setText("Address: " + space.getAddress());
         tvContact.setText("Contact: " + space.getContact());
 
-        int distance = space.getDistanceMeters();
-        tvDistance.setText(distance > 0
-                ? (distance >= 1000
-                ? String.format(Locale.getDefault(), "Distance: %.1f km", distance / 1000.0)
-                : "Distance: " + distance + " m")
-                : "Distance: Unknown");
+        Integer distance = space.getDistanceMeters();
+        if (distance != null && distance > 0) {
+            tvDistance.setText(distance >= 1000
+                    ? String.format(Locale.getDefault(), "Distance: %.1f km", distance / 1000.0)
+                    : "Distance: " + distance + " m");
+        } else {
+            tvDistance.setText("Distance: Unknown");
+        }
     }
 
     private void setupDirections() {
@@ -112,19 +113,20 @@ public class SpaceDetailsFragment extends Fragment {
 
             final String userId = auth.getCurrentUser().getUid();
 
-            DatabaseReference ownerNotificationsRef = FirebaseDatabase.getInstance(DB_URL)
-                    .getReference("notifications")
-                    .child(ownerId);
+            DatabaseReference bookingsRef = FirebaseDatabase.getInstance(DB_URL)
+                    .getReference("spaces")
+                    .child(spaceId)
+                    .child("bookings");
 
-            // Check if this user already booked this space
-            ownerNotificationsRef.orderByChild("userId").equalTo(userId)
+            // Check if user already booked this space
+            bookingsRef.orderByChild("userId").equalTo(userId)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                             boolean alreadyBooked = false;
-                            for (DataSnapshot notificationSnap : snapshot.getChildren()) {
-                                NotificationModel notification = notificationSnap.getValue(NotificationModel.class);
-                                if (notification != null && spaceId.equals(notification.getSpaceId())) {
+                            for (DataSnapshot bookingSnap : snapshot.getChildren()) {
+                                BookingsDataModel booking = bookingSnap.getValue(BookingsDataModel.class);
+                                if (booking != null && spaceId.equals(booking.getSpaceId())) {
                                     alreadyBooked = true;
                                     break;
                                 }
@@ -162,28 +164,51 @@ public class SpaceDetailsFragment extends Fragment {
                     ? userSnapshot.getValue(String.class)
                     : "User";
 
-            DatabaseReference notifRef = FirebaseDatabase.getInstance(DB_URL)
-                    .getReference("notifications")
-                    .child(ownerId)
-                    .push();
-
-            NotificationModel notification = new NotificationModel(
+            // Add spaceCategory here
+            BookingsDataModel booking = new BookingsDataModel(
                     userId,
                     usernameFromDb,
                     spaceId,
                     spaceName,
+                    space.getCategory(),  // ✅ store the category
                     date,
                     false,
                     createdAt,
                     "Booked Visit"
             );
-            notification.setSpaceType(spaceType);
 
-            notifRef.setValue(notification)
+            DatabaseReference bookingDataRef = FirebaseDatabase.getInstance(DB_URL)
+                    .getReference("spaces")
+                    .child(spaceId)
+                    .child("bookings")
+                    .push();
+
+            String bookingId = bookingDataRef.getKey(); // unique booking id
+
+            bookingDataRef.setValue(booking)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            Snackbar.make(requireView(),
-                                    "Visit booked successfully!", Snackbar.LENGTH_SHORT).show();
+                            // Save booking reference in user's node
+                            DatabaseReference userBookingRef = FirebaseDatabase.getInstance(DB_URL)
+                                    .getReference("users")
+                                    .child(userId)
+                                    .child("booking_reference")
+                                    .child(bookingId);
+
+                            userBookingRef.setValue(true)
+                                    .addOnCompleteListener(refTask -> {
+                                        if (refTask.isSuccessful()) {
+                                            Snackbar.make(requireView(),
+                                                    "Visit booked successfully!",
+                                                    Snackbar.LENGTH_SHORT).show();
+                                        } else {
+                                            Snackbar.make(requireView(),
+                                                    "Booking saved but failed to update user: "
+                                                            + Objects.requireNonNull(refTask.getException()).getMessage(),
+                                                    Snackbar.LENGTH_LONG).show();
+                                        }
+                                    });
+
                         } else {
                             Snackbar.make(requireView(),
                                     "Booking failed: " + Objects.requireNonNull(task.getException()).getMessage(),

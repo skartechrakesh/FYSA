@@ -1,7 +1,5 @@
 package com.skar.fysa;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,10 +20,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,11 +31,6 @@ public class ManageSpacesFragment extends Fragment {
     private DatabaseReference globalSpacesRef;
 
     private static final int BATCH_SIZE = 5;
-    private int loadedCount = 0;
-    private final List<SpaceWrapper> allSpaces = new ArrayList<>();
-
-    private static final String PREFS_NAME = "spaces_cache";
-    private static final String KEY_SPACES = "all_spaces";
 
     @Nullable
     @Override
@@ -49,131 +39,39 @@ public class ManageSpacesFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View root = inflater.inflate(R.layout.fragment_manage_spaces, container, false);
-
         spacesListContainer = root.findViewById(R.id.spacesListContainer);
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
 
-        FirebaseDatabase db = FirebaseDatabase.getInstance(
+        globalSpacesRef = FirebaseDatabase.getInstance(
                 "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        );
-        globalSpacesRef = db.getReference("spaces");
+        ).getReference("spaces");
 
-        // Load from cache first
-        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
-        if (!cachedSpaces.isEmpty()) {
-            allSpaces.addAll(cachedSpaces);
-            loadNextBatch(inflater);
-        } else {
-            fetchSpacesFromFirebase(inflater);
-        }
+        // Always fetch fresh data when fragment is loaded
+        fetchSpacesFromFirebase(inflater);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
             fetchSpacesFromFirebase(inflater);
             swipeRefreshLayout.setRefreshing(false);
         });
 
-        // Listen for edited spaces from EditSpaceFragment
-        getParentFragmentManager().setFragmentResultListener("edit_space_result", this,
-                (requestKey, bundle) -> {
-                    Space editedSpace = (Space) bundle.getSerializable("space");
-                    String category = bundle.getString("category");
-
-                    // Update cached object
-                    boolean updated = false;
-                    for (SpaceWrapper wrapper : allSpaces) {
-                        if (wrapper.space.getId().equals(editedSpace.getId()) &&
-                                wrapper.category.equals(category)) {
-                            wrapper.space = editedSpace;
-                            updated = true;
-                            break;
-                        }
-                    }
-                    if (!updated) allSpaces.add(new SpaceWrapper(category, editedSpace));
-
-                    updateCache(editedSpace, category);
-
-                    // Update UI row
-                    String tag = editedSpace.getId() + "_" + category;
-                    View rowToUpdate = spacesListContainer.findViewWithTag(tag);
-                    if (rowToUpdate != null) {
-                        TextView txtSpaceName = rowToUpdate.findViewById(R.id.spaceName);
-                        TextView tvVacancy = rowToUpdate.findViewById(R.id.vacancySwitch);
-
-                        txtSpaceName.setText(editedSpace.getName() + " (" + editedSpace.getType() + ")");
-                        if (editedSpace.isVacancy()) {
-                            tvVacancy.setText("Vacancy Available: Yes");
-                            tvVacancy.setTextColor(getResources().getColor(R.color.green_500, null));
-                        } else {
-                            tvVacancy.setText("Vacancy Available: No");
-                            tvVacancy.setTextColor(getResources().getColor(R.color.red_500, null));
-                        }
-                    } else {
-                        // Row not found (maybe not yet loaded), add it
-                        addSpaceRow(getLayoutInflater(), editedSpace, category);
-                    }
-                });
-
         return root;
     }
 
-    // ------------------- SharedPreferences helpers -------------------
-    private void saveSpacesToCache(List<SpaceWrapper> spaces) {
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putString(KEY_SPACES, new Gson().toJson(spaces)).apply();
-    }
-
-    private List<SpaceWrapper> getSpacesFromCache() {
-        SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String json = prefs.getString(KEY_SPACES, null);
-        if (json == null) return new ArrayList<>();
-        Type type = new TypeToken<List<SpaceWrapper>>(){}.getType();
-        return new Gson().fromJson(json, type);
-    }
-
-    private void updateCache(Space space, String category) {
-        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
-        for (SpaceWrapper wrapper : cachedSpaces) {
-            if (wrapper.space.getId().equals(space.getId()) && wrapper.category.equals(category)) {
-                wrapper.space = space;
-                break;
-            }
-        }
-        saveSpacesToCache(cachedSpaces);
-    }
-
-    private void deleteFromCache(Space space, String category) {
-        List<SpaceWrapper> cachedSpaces = getSpacesFromCache();
-        cachedSpaces.removeIf(wrapper -> wrapper.space.getId().equals(space.getId())
-                && wrapper.category.equals(category));
-        saveSpacesToCache(cachedSpaces);
-    }
-
-    // ------------------- Firebase Loading -------------------
     private void fetchSpacesFromFirebase(LayoutInflater inflater) {
         spacesListContainer.removeAllViews();
-        loadedCount = 0;
-        allSpaces.clear();
 
         globalSpacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                List<SpaceWrapper> spacesToCache = new ArrayList<>();
-                for (DataSnapshot categorySnapshot : snapshot.getChildren()) {
-                    String category = categorySnapshot.getKey();
-                    for (DataSnapshot spaceSnapshot : categorySnapshot.getChildren()) {
-                        Space space = spaceSnapshot.getValue(Space.class);
-                        if (space != null) {
-                            space.setId(spaceSnapshot.getKey());
-                            SpaceWrapper wrapper = new SpaceWrapper(category, space);
-                            allSpaces.add(wrapper);
-                            spacesToCache.add(wrapper);
-                        }
-                    }
+                if (!snapshot.exists()) {
+                    showSnackbar(spacesListContainer, "No spaces found");
+                    return;
                 }
-                saveSpacesToCache(spacesToCache);
 
-                if (allSpaces.isEmpty()) showSnackbar(spacesListContainer, "No spaces found");
-                else loadNextBatch(inflater);
+                List<DataSnapshot> snapshots = new ArrayList<>();
+                for (DataSnapshot snap : snapshot.getChildren()) snapshots.add(snap);
+
+                loadNextBatch(inflater, snapshots, 0);
             }
 
             @Override
@@ -183,58 +81,53 @@ public class ManageSpacesFragment extends Fragment {
         });
     }
 
-    private void loadNextBatch(LayoutInflater inflater) {
-        int end = Math.min(loadedCount + BATCH_SIZE, allSpaces.size());
+    private void loadNextBatch(LayoutInflater inflater, List<DataSnapshot> snapshots, int startIndex) {
+        int endIndex = Math.min(startIndex + BATCH_SIZE, snapshots.size());
 
-        for (int i = loadedCount; i < end; i++) {
-            SpaceWrapper wrapper = allSpaces.get(i);
-            addSpaceRow(inflater, wrapper.space, wrapper.category);
+        for (int i = startIndex; i < endIndex; i++) {
+            DataSnapshot snap = snapshots.get(i);
+            Space space = snap.getValue(Space.class);
+            if (space != null) {
+                space.setId(snap.getKey());
+                addSpaceRow(inflater, space);
+            }
         }
 
-        loadedCount = end;
+        if (endIndex < snapshots.size()) {
+            TextView loadMore = new TextView(requireContext());
+            loadMore.setText("Load More");
+            loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
+            loadMore.setTextSize(16f);
+            loadMore.setPadding(0, 24, 0, 24);
+            loadMore.setPaintFlags(loadMore.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+            loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
-        if (loadedCount < allSpaces.size()) addLoadMoreLink(inflater);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            loadMore.setLayoutParams(params);
+
+            int nextStart = endIndex;
+            loadMore.setOnClickListener(v -> {
+                spacesListContainer.removeView(v);
+                loadNextBatch(inflater, snapshots, nextStart);
+            });
+
+            spacesListContainer.addView(loadMore);
+        }
     }
 
-    private void addLoadMoreLink(LayoutInflater inflater) {
-        View existing = spacesListContainer.findViewWithTag("load_more_link");
-        if (existing != null) spacesListContainer.removeView(existing);
+    private void addSpaceRow(LayoutInflater inflater, Space space) {
+        View row = inflater.inflate(R.layout.item_manage_space_list, spacesListContainer, false);
+        row.setTag(space.getId());
 
-        TextView loadMoreLink = new TextView(requireContext());
-        loadMoreLink.setText("Load More");
-        loadMoreLink.setTag("load_more_link");
-        loadMoreLink.setTextColor(getResources().getColor(R.color.linkText, null));
-        loadMoreLink.setTextSize(16f);
-        loadMoreLink.setPadding(0, 24, 0, 24);
-        loadMoreLink.setPaintFlags(loadMoreLink.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
-        loadMoreLink.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        TextView txtName = row.findViewById(R.id.spaceName);
+        ImageButton btnEdit = row.findViewById(R.id.btnEditSpace);
+        ImageButton btnDelete = row.findViewById(R.id.btnDeleteSpace);
+        TextView tvVacancy = row.findViewById(R.id.vacancySwitch);
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        loadMoreLink.setLayoutParams(params);
-
-        loadMoreLink.setOnClickListener(v -> {
-            spacesListContainer.removeView(v);
-            loadNextBatch(inflater);
-        });
-
-        spacesListContainer.addView(loadMoreLink);
-    }
-
-    private void addSpaceRow(LayoutInflater inflater, Space space, String category) {
-        View spaceRow = inflater.inflate(R.layout.item_manage_space_list, spacesListContainer, false);
-
-        // Tag row with unique identifier
-        spaceRow.setTag(space.getId() + "_" + category);
-
-        TextView txtSpaceName = spaceRow.findViewById(R.id.spaceName);
-        ImageButton btnEditSpace = spaceRow.findViewById(R.id.btnEditSpace);
-        ImageButton btnDeleteSpace = spaceRow.findViewById(R.id.btnDeleteSpace);
-        TextView tvVacancy = spaceRow.findViewById(R.id.vacancySwitch);
-
-        txtSpaceName.setText(space.getName() + " (" + space.getType() + ")");
+        txtName.setText(space.getName() + " (" + space.getCategory() + ")");
         if (space.isVacancy()) {
             tvVacancy.setText("Vacancy Available: Yes");
             tvVacancy.setTextColor(getResources().getColor(R.color.green_500, null));
@@ -243,11 +136,10 @@ public class ManageSpacesFragment extends Fragment {
             tvVacancy.setTextColor(getResources().getColor(R.color.red_500, null));
         }
 
-        btnEditSpace.setOnClickListener(v -> {
+        btnEdit.setOnClickListener(v -> {
             EditSpaceFragment editFragment = new EditSpaceFragment();
             Bundle args = new Bundle();
             args.putSerializable("space", space);
-            args.putString("category", category);
             editFragment.setArguments(args);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
@@ -256,40 +148,38 @@ public class ManageSpacesFragment extends Fragment {
                     .commit();
         });
 
-        btnDeleteSpace.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
+        btnDelete.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Space")
                 .setMessage("Are you sure you want to delete " + space.getName() + "?")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    globalSpacesRef.child(category).child(space.getId())
-                            .removeValue()
+                    globalSpacesRef.child(space.getId()).removeValue()
                             .addOnSuccessListener(aVoid -> {
-                                showSnackbar(spaceRow, "Deleted " + space.getName());
-                                allSpaces.removeIf(wrapper ->
-                                        wrapper.space.getId().equals(space.getId()) &&
-                                                wrapper.category.equals(category));
-                                deleteFromCache(space, category);
-                                spacesListContainer.removeAllViews();
-                                loadedCount = 0;
-                                loadNextBatch(inflater);
+                                // Remove space from user's reference
+                                FirebaseDatabase.getInstance(
+                                                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+                                        ).getReference("users")
+                                        .child(space.getOwnerId())
+                                        .child("space_reference")
+                                        .child(space.getId())
+                                        .removeValue()
+                                        .addOnCompleteListener(task -> {
+                                            if (task.isSuccessful())
+                                                showSnackbar(row, "Deleted " + space.getName());
+                                            else
+                                                showSnackbar(row, "Failed to remove space reference");
+
+                                            // Refresh list after deletion
+                                            fetchSpacesFromFirebase(inflater);
+                                        });
                             });
                 })
                 .setNegativeButton("No", null)
                 .show());
 
-        spacesListContainer.addView(spaceRow);
+        spacesListContainer.addView(row);
     }
 
     private void showSnackbar(View view, String message) {
         Snackbar.make(view, message, Snackbar.LENGTH_SHORT).show();
-    }
-
-    public static class SpaceWrapper {
-        public String category;
-        public Space space;
-
-        public SpaceWrapper(String category, Space space) {
-            this.category = category;
-            this.space = space;
-        }
     }
 }

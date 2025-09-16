@@ -24,10 +24,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
-import com.google.android.gms.ads.LoadAdError;
-import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -144,7 +144,7 @@ public class EditSpaceFragment extends Fragment {
                 android.R.layout.simple_dropdown_item_1line, categories);
         spinnerCategory.setAdapter(adapter);
 
-        int position = adapter.getPosition(space.getType());
+        int position = adapter.getPosition(space.getCategory());
         if (position >= 0) spinnerCategory.setText(adapter.getItem(position), false);
     }
 
@@ -272,17 +272,16 @@ public class EditSpaceFragment extends Fragment {
         space.setAddress(address);
         space.setLatitude(center.getLatitude());
         space.setLongitude(center.getLongitude());
-        space.setType(category);
+        space.setCategory(category);
         space.setVacancy(vacancyText.equals("Yes"));
 
-        globalSpacesRef.child(category).child(space.getId())
+        // Update space under spaces/{spaceId}
+        globalSpacesRef.child(space.getId())
                 .setValue(space)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Send updated space to ManageSpacesFragment
                         Bundle result = new Bundle();
                         result.putSerializable("space", space);
-                        result.putString("category", category);
                         getParentFragmentManager().setFragmentResult("edit_space_result", result);
 
                         if (onSpaceUpdatedListener != null) {

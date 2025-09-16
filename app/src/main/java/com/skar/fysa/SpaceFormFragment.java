@@ -274,6 +274,9 @@ public class SpaceFormFragment extends Fragment {
     // ---------------------------------------------------------------------------------------------
     // Form Handling
     // ---------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------
+// Form Handling
+// ---------------------------------------------------------------------------------------------
     private void submitForm() {
         String name = Objects.requireNonNull(inputName.getText()).toString().trim();
         String ownerName = Objects.requireNonNull(inputOwnerName.getText()).toString().trim();
@@ -294,7 +297,8 @@ public class SpaceFormFragment extends Fragment {
         String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
         String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
 
-        String spaceId = globalSpacesRef.child(category).push().getKey();
+        // Generate a new unique space ID
+        String spaceId = globalSpacesRef.push().getKey();
         if (spaceId == null) {
             Snackbar.make(fragmentView, "Failed to create ID", Snackbar.LENGTH_SHORT).show();
             return;
@@ -305,13 +309,32 @@ public class SpaceFormFragment extends Fragment {
                 uid, ownerName, address, contact, email, true
         );
 
-        globalSpacesRef.child(category).child(spaceId).setValue(space).addOnCompleteListener(globalTask -> {
-            if (globalTask.isSuccessful()) {
-                Snackbar.make(fragmentView, category + " saved successfully!", Snackbar.LENGTH_SHORT).show();
-                getParentFragmentManager().popBackStack();
+        // Save the space under spaces/{spaceId}
+        globalSpacesRef.child(spaceId).setValue(space).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+
+                // Add reference under current user for multiple spaces
+                DatabaseReference userRef = FirebaseDatabase.getInstance(
+                                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
+                        .getReference("users")
+                        .child(uid);
+
+                // ✅ Only add space_reference for owners
+                userRef.child("space_reference").child(spaceId).setValue(true)
+                        .addOnCompleteListener(refTask -> {
+                            if (refTask.isSuccessful()) {
+                                Snackbar.make(fragmentView, category + " saved successfully!", Snackbar.LENGTH_SHORT).show();
+                                getParentFragmentManager().popBackStack();
+                            } else {
+                                Snackbar.make(fragmentView, "Failed to add space reference: " +
+                                                Objects.requireNonNull(refTask.getException()).getMessage(),
+                                        Snackbar.LENGTH_LONG).show();
+                            }
+                        });
+
             } else {
                 Snackbar.make(fragmentView, "Save failed: " +
-                        Objects.requireNonNull(globalTask.getException()).getMessage(), Snackbar.LENGTH_LONG).show();
+                        Objects.requireNonNull(task.getException()).getMessage(), Snackbar.LENGTH_LONG).show();
             }
         });
     }

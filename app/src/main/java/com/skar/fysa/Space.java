@@ -7,14 +7,15 @@ import java.io.Serializable;
 
 /**
  * Model class representing a rental space (Hostel, PG, Room, House, Flat).
- * Stored in Firebase under: spaces/<category>/<id>.
+ * Stored in Firebase under: spaces/<spaceId>.
+ * Each space has a "category" field for filtering.
  */
 @IgnoreExtraProperties
 public class Space implements Serializable {
 
     private String id;          // Firebase push key
     private String name;        // Space name
-    private String type;        // Hostel / PG / Room / House / Flat
+    private String category;    // Hostel / PG / Room / House / Flat ✅ replaces type
     private double latitude;    // Latitude
     private double longitude;   // Longitude
     private String ownerId;     // UID of the owner
@@ -32,14 +33,14 @@ public class Space implements Serializable {
     public Space() {}
 
     // --- Full constructor ---
-    public Space(String id, String name, String type,
+    public Space(String id, String name, String category,
                  double latitude, double longitude,
                  String ownerId, String ownerName,
                  String address, String contact,
                  String email, Boolean vacancy) {
         this.id = id;
         this.name = name;
-        this.type = type;
+        this.category = category;
         this.latitude = latitude;
         this.longitude = longitude;
         this.ownerId = ownerId;
@@ -53,7 +54,7 @@ public class Space implements Serializable {
     // --- Getters ---
     public String getId() { return id; }
     public String getName() { return name; }
-    public String getType() { return type; }
+    public String getCategory() { return category; }
     public double getLatitude() { return latitude; }
     public double getLongitude() { return longitude; }
     public String getOwnerId() { return ownerId; }
@@ -70,7 +71,7 @@ public class Space implements Serializable {
     // --- Setters ---
     public void setId(String id) { this.id = id; }
     public void setName(String name) { this.name = name; }
-    public void setType(String type) { this.type = type; }
+    public void setCategory(String category) { this.category = category; }
     public void setLatitude(double latitude) { this.latitude = latitude; }
     public void setLongitude(double longitude) { this.longitude = longitude; }
     public void setOwnerId(String ownerId) { this.ownerId = ownerId; }

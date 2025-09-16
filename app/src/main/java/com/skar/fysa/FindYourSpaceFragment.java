@@ -14,7 +14,6 @@ import android.widget.Button;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -28,10 +27,12 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.database.*;
 
-import java.io.Serializable;
 import java.util.*;
 
 public class FindYourSpaceFragment extends Fragment {
@@ -52,6 +53,10 @@ public class FindYourSpaceFragment extends Fragment {
 
     private final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private String selectedCategory = null;
+    private FusedLocationProviderClient fusedLocationClient;
+
+    private String lastKey = null;
+    private boolean isLoading = false;
 
     private final ActivityResultLauncher<String[]> permissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -87,6 +92,7 @@ public class FindYourSpaceFragment extends Fragment {
 
         swipeRefresh = view.findViewById(R.id.swipeRefresh);
         nativeAdView = view.findViewById(R.id.native_ad_view);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
         adapter = new SpacesAdapter(spaceList, space -> {
             SpaceDetailsFragment fragment = new SpaceDetailsFragment();
@@ -103,7 +109,14 @@ public class FindYourSpaceFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
-        swipeRefresh.setOnRefreshListener(this::loadNearbySpacesFromFirebase);
+        swipeRefresh.setOnRefreshListener(() -> {
+            if (selectedCategory != null) {
+                fetchUserLocationAndThenSpaces();
+            } else {
+                swipeRefresh.setRefreshing(false);
+                Snackbar.make(requireView(), "Please select a category first", Snackbar.LENGTH_SHORT).show();
+            }
+        });
 
         View.OnClickListener filterListener = v -> {
             resetCategorySelection();
@@ -111,7 +124,7 @@ public class FindYourSpaceFragment extends Fragment {
             clicked.setSelected(true);
             selectedCategory = clicked.getText().toString();
             spaceList.clear();
-            loadNearbySpacesFromFirebase();
+            fetchUserLocationAndThenSpaces();
         };
 
         btnHostel.setOnClickListener(filterListener);
@@ -122,7 +135,6 @@ public class FindYourSpaceFragment extends Fragment {
 
         MobileAds.initialize(requireContext(), initializationStatus -> loadNativeAd());
 
-        // Restore state after theme change
         if (savedInstanceState != null) {
             selectedCategory = savedInstanceState.getString("selectedCategory");
             List<Space> savedSpaces = (List<Space>) savedInstanceState.getSerializable("spaceList");
@@ -131,8 +143,9 @@ public class FindYourSpaceFragment extends Fragment {
                 spaceList.addAll(savedSpaces);
                 adapter.submitList(new ArrayList<>(spaceList));
             }
-        } else {
-            checkLocationAndLoad();
+            if (selectedCategory != null) {
+                fetchUserLocationAndThenSpaces();
+            }
         }
 
         return view;
@@ -149,56 +162,46 @@ public class FindYourSpaceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload spaces when returning from details if category is selected
         if (selectedCategory != null) {
-            loadNearbySpacesFromFirebase();
-        }
-    }
-
-    private void checkLocationAndLoad() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permissionLauncher.launch(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
-        } else {
             fetchUserLocationAndThenSpaces();
         }
     }
 
+    // ✅ Always fetch fresh location before loading spaces
     private void fetchUserLocationAndThenSpaces() {
-        android.location.LocationManager lm =
-                (android.location.LocationManager) requireContext().getSystemService(requireContext().LOCATION_SERVICE);
-
-        try {
-            Location last = null;
-            if (lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)) {
-                last = lm.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
-            }
-            if (last == null && lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
-                last = lm.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);
-            }
-
-            if (last != null) userLocation = last;
-
-        } catch (SecurityException e) {
-            Snackbar.make(requireView(), "Location permission missing", Snackbar.LENGTH_SHORT).show();
-        } finally {
-            loadNearbySpacesFromFirebase();
-        }
-    }
-
-    private void loadNearbySpacesFromFirebase() {
-        if (selectedCategory == null || !spaceList.isEmpty()) {
-            swipeRefresh.setRefreshing(false);
+        if (ActivityCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(),
+                        Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
             return;
         }
 
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(location -> {
+                    if (location != null) {
+                        userLocation = location;
+                        Log.d(TAG, "User location: " + location.getLatitude() + ", " + location.getLongitude());
+                    } else {
+                        Log.w(TAG, "User location is null, fallback to lastLocation");
+                        fusedLocationClient.getLastLocation().addOnSuccessListener(last -> userLocation = last);
+                    }
+                    loadNearbySpacesFromFirebase();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to get current location: " + e.getMessage());
+                    loadNearbySpacesFromFirebase(); // fallback
+                });
+    }
+
+    private void loadNearbySpacesFromFirebase() {
         swipeRefresh.setRefreshing(true);
+
         DatabaseReference spacesRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("spaces")
-                .child(selectedCategory);
+                .getReference("spaces");
 
         spacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -210,11 +213,17 @@ public class FindYourSpaceFragment extends Fragment {
                     if (space == null || !Boolean.TRUE.equals(space.isVacancy())) continue;
                     if (!spaceSnap.hasChild("latitude") || !spaceSnap.hasChild("longitude")) continue;
 
-                    if (space.getId() == null || space.getId().isEmpty())
+                    if (space.getId() == null || space.getId().isEmpty()) {
                         space.setId(spaceSnap.getKey());
+                    }
 
-                    space.setType(selectedCategory);
+                    // ✅ Filter by category
+                    if (selectedCategory != null &&
+                            !selectedCategory.equalsIgnoreCase(space.getCategory())) {
+                        continue;
+                    }
 
+                    // ✅ Calculate distance from current userLocation
                     if (userLocation != null) {
                         float[] results = new float[1];
                         Location.distanceBetween(
@@ -224,15 +233,23 @@ public class FindYourSpaceFragment extends Fragment {
                                 space.getLongitude(),
                                 results
                         );
-                        if (results[0] <= MAX_DISTANCE_METERS) {
-                            space.setDistanceMeters((int) results[0]);
+                        int distanceMeters = (int) results[0];
+                        space.setDistanceMeters(distanceMeters);
+
+                        if (distanceMeters <= MAX_DISTANCE_METERS) {
                             spaceList.add(space);
                         }
-                    } else spaceList.add(space);
+                    } else {
+                        space.setDistanceMeters(-1); // fallback
+                        spaceList.add(space);
+                    }
                 }
 
+                // Sort by distance
                 Collections.sort(spaceList, Comparator.comparingInt(s ->
-                        s.getDistanceMeters() != null ? s.getDistanceMeters() : Integer.MAX_VALUE));
+                        (s.getDistanceMeters() != null && s.getDistanceMeters() >= 0)
+                                ? s.getDistanceMeters()
+                                : Integer.MAX_VALUE));
 
                 adapter.submitList(new ArrayList<>(spaceList));
                 swipeRefresh.setRefreshing(false);
@@ -291,7 +308,7 @@ public class FindYourSpaceFragment extends Fragment {
         if (loadedNativeAd != null) loadedNativeAd.destroy();
     }
 
-    // ======= ADAPTER (no pagination) =======
+    // ======= ADAPTER =======
     private static class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
         public interface OnSpaceClick {
             void onClick(Space space);
@@ -329,14 +346,14 @@ public class FindYourSpaceFragment extends Fragment {
         }
 
         static class SpaceVH extends RecyclerView.ViewHolder {
-            TextView tvName, tvType, tvOwner, tvAddress, tvContact, tvDistance, tvVacancy;
+            TextView tvName, tvCategory, tvOwner, tvAddress, tvContact, tvDistance, tvVacancy;
             CardView card;
 
             SpaceVH(@NonNull View itemView) {
                 super(itemView);
                 card = (CardView) itemView;
                 tvName = itemView.findViewById(R.id.tvName);
-                tvType = itemView.findViewById(R.id.tvType);
+                tvCategory = itemView.findViewById(R.id.tvCategory);
                 tvOwner = itemView.findViewById(R.id.tvOwner);
                 tvAddress = itemView.findViewById(R.id.tvAddress);
                 tvContact = itemView.findViewById(R.id.tvContact);
@@ -346,12 +363,19 @@ public class FindYourSpaceFragment extends Fragment {
 
             void bind(Space space, OnSpaceClick listener) {
                 tvName.setText(space.getName());
-                tvType.setText(space.getType());
+                tvCategory.setText(space.getCategory());
                 tvOwner.setText(space.getOwnerName());
                 tvAddress.setText(space.getAddress());
                 tvContact.setText(space.getContact());
-                tvVacancy.setText(Boolean.TRUE.equals(space.isVacancy()) ? "Vacancy Available" : "Not Available");
-                tvDistance.setText(space.getDistanceMeters() != null ? space.getDistanceMeters() + " m away" : "Unknown");
+                tvVacancy.setText(Boolean.TRUE.equals(space.isVacancy())
+                        ? "Vacancy Available"
+                        : "Not Available");
+
+                if (space.getDistanceMeters() != null && space.getDistanceMeters() >= 0) {
+                    tvDistance.setText(space.getDistanceMeters() + " m away");
+                } else {
+                    tvDistance.setText("Distance unavailable");
+                }
 
                 card.setOnClickListener(v -> {
                     if (listener != null) listener.onClick(space);

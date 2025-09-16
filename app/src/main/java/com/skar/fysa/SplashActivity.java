@@ -22,7 +22,7 @@ import com.google.firebase.database.ValueEventListener;
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
 
-    private static final int SPLASH_DELAY = 1800; // 1 second
+    private static final int SPLASH_DELAY = 1500; // 1.5 seconds
 
     private FirebaseAuth mAuth;
     private DatabaseReference usersRef;
