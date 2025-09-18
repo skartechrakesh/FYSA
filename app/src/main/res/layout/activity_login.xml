@@ -39,14 +39,16 @@
             android:orientation="vertical"
             android:paddingTop="20dp">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/appLogo"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:layout_marginBottom="4dp"
                 android:contentDescription="@string/app_logo"
-                android:src="@drawable/logo"
-                tools:ignore="ImageContrastCheck" />
+                android:padding="10dp"
+                android:src="@mipmap/ic_launcher_round"
+                tools:ignore="ImageContrastCheck"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.ExtraLarge"/>
 
             <TextView
                 android:id="@+id/appTitle"
@@ -134,7 +136,7 @@
                     android:layout_marginStart="48dp"
                     android:layout_marginEnd="48dp"
                     android:layout_marginTop="22dp"
-                    android:backgroundTint="?attr/colorSurface"
+                    android:backgroundTint="?attr/buttonColor"
                     android:text="@string/login"
                     android:textColor="?attr/colorOnSurface"
                     app:cornerRadius="12dp"
@@ -147,7 +149,7 @@
                     android:layout_marginTop="14dp"
                     android:text="@string/or"
                     android:textAlignment="center"
-                    android:textColor="?attr/colorSecondaryVariant"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="14sp" />
 
                 <ProgressBar

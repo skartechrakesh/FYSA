@@ -9,19 +9,20 @@
     tools:context=".SplashActivity">
 
     <!-- App Logo -->
-    <ImageView
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivLogo"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_margin="0dp"
         android:contentDescription="app logo"
         android:scaleType="fitCenter"
-        android:src="@drawable/logo"
+        android:src="@mipmap/ic_launcher"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.5" />
+        app:layout_constraintWidth_percent="0.5"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Large"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

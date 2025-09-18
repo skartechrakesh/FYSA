@@ -31,5 +31,6 @@
         <item name="colorSurfaceInverse">@color/grey_50</item>
         <item name="colorPrimaryInverse">@color/indigo_800</item>
         <item name="colorSuccess">@color/green_300</item>
+        <item name="buttonColor">@color/deep_orange_700</item>
     </style>
 </resources>

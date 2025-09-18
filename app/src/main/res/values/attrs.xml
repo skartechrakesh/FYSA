@@ -2,5 +2,6 @@
     <attr name="splashBackground" format="color" />
     <attr name="colorSuccess" format="color" />
     <attr name="colorOnSurface" format="color" />
+    <attr name="buttonColor" format="color" />
 
 </resources>

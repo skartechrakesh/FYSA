@@ -30,6 +30,7 @@
         <item name="colorSurfaceInverse">@color/grey_900</item>
         <item name="colorPrimaryInverse">@color/indigo_200</item>
         <item name="colorSuccess">@color/green_500</item>
+        <item name="buttonColor">@color/deep_orange_400</item>
     </style>
 
     <style name="CircleImage">

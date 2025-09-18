@@ -42,9 +42,8 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        // Delay for splash branding, then redirect
+        // Delay for splash branding, then check session & redirect
         new Handler(Looper.getMainLooper()).postDelayed(this::checkSessionAndRedirect, SPLASH_DELAY);
-        new Handler(Looper.getMainLooper()).postDelayed(this::goToMainActivity, SPLASH_DELAY);
     }
 
     /**

@@ -135,5 +135,7 @@
     <string name="distance_unknown">Distance unknown</string>
     <string name="distance_meters_away">%1$d m away</string>
     <string name="vacancy_available">Vacancy Available</string>
+    <string name="theme_button">theme button</string>
+    <string name="register_caps">REGISTER</string>
 
 </resources>
