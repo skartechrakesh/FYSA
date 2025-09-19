@@ -36,11 +36,10 @@ public class SettingsFragment extends Fragment {
         });
 
         view.findViewById(R.id.itemPrivacyPolicy).setOnClickListener(v -> {
-            PrivacyPolicyFragment fragment = new PrivacyPolicyFragment();
-            Bundle args = new Bundle();
-            args.putString("source", "settings");
-            fragment.setArguments(args);
-            openFragment(fragment);
+            String url = "https://sites.google.com/view/fysa-privacy-policy";
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(android.net.Uri.parse(url));
+            startActivity(intent);
         });
 
         view.findViewById(R.id.itemHelp).setOnClickListener(v -> {
@@ -57,6 +56,13 @@ public class SettingsFragment extends Fragment {
             args.putString("source", "settings");
             fragment.setArguments(args);
             openFragment(fragment);
+        });
+
+        view.findViewById(R.id.itemTermsOfService).setOnClickListener(v -> {
+            String url = "https://sites.google.com/view/fysa-terms-of-service";
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(android.net.Uri.parse(url));
+            startActivity(intent);
         });
 
         view.findViewById(R.id.itemAbout).setOnClickListener(v -> {

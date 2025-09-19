@@ -113,7 +113,7 @@
     <string name="stars_password">********</string>
     <string name="version">Version</string>
     <string name="developer">Developer</string>
-    <string name="app_description">App Description</string>
+    <string name="app_description">Discover rental spaces instantly! Find houses, flats, rooms, hostels, and PGs near you with real-time availability.</string>
     <string name="current_password">Current Password</string>
     <string name="new_password">New Password</string>
 
@@ -137,5 +137,8 @@
     <string name="vacancy_available">Vacancy Available</string>
     <string name="theme_button">theme button</string>
     <string name="register_caps">REGISTER</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="click_here">Click Here</string>
+    <string name="contact">Contact</string>
 
 </resources>

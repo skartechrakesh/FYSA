@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,14 +25,13 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
-    private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance;
+    // ✅ ADDED: Variable for the category TextView
+    private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory;
     private Button btnDirections, btnBook;
 
     private Space space;
@@ -55,6 +55,8 @@ public class SpaceDetailsFragment extends Fragment {
         tvDistance = view.findViewById(R.id.tvDistance);
         btnDirections = view.findViewById(R.id.btnDirections);
         btnBook = view.findViewById(R.id.btnBook);
+        // ✅ INITIALIZED: The tvCategory variable
+        tvCategory = view.findViewById(R.id.tvCategory);
 
         if (getArguments() != null) {
             space = (Space) getArguments().getSerializable("space");
@@ -79,6 +81,8 @@ public class SpaceDetailsFragment extends Fragment {
         tvOwnerName.setText("Owner: " + space.getOwnerName());
         tvAddress.setText("Address: " + space.getAddress());
         tvContact.setText("Contact: " + space.getContact());
+        // ✅ SET TEXT: Set the text for the category
+        tvCategory.setText("Category: " + space.getCategory());
 
         Integer distance = space.getDistanceMeters();
         if (distance != null && distance > 0) {
@@ -92,14 +96,19 @@ public class SpaceDetailsFragment extends Fragment {
 
     private void setupDirections() {
         btnDirections.setOnClickListener(v -> {
-            if (latitude == 0 && longitude == 0) {
+            if (latitude == 0.0 && longitude == 0.0) {
                 Snackbar.make(requireView(), "Location unavailable", Snackbar.LENGTH_SHORT).show();
                 return;
             }
-            String uri = "https://www.google.com/maps/dir/?api=1&destination=" + latitude + "," + longitude;
+            String uri = "http://maps.google.com/maps?q=loc:" + latitude + "," + longitude;
             Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
             mapIntent.setPackage("com.google.android.apps.maps");
-            startActivity(mapIntent);
+
+            if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(mapIntent);
+            } else {
+                Toast.makeText(requireContext(), "Google Maps app not installed.", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -156,25 +165,31 @@ public class SpaceDetailsFragment extends Fragment {
 
         DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
                 .getReference("users")
-                .child(userId)
-                .child("username");
+                .child(userId);
 
         userRef.get().addOnSuccessListener(userSnapshot -> {
-            final String usernameFromDb = userSnapshot.exists()
-                    ? userSnapshot.getValue(String.class)
+            final String usernameFromDb = userSnapshot.child("username").exists()
+                    ? userSnapshot.child("username").getValue(String.class)
                     : "User";
+            // ✅ ADDED: Retrieve the contact number from the user snapshot
+            final String userContactFromDb = userSnapshot.child("contact").exists()
+                    ? userSnapshot.child("contact").getValue(String.class)
+                    : "No Contact Provided";
 
-            // Add spaceCategory here
             BookingsDataModel booking = new BookingsDataModel(
                     userId,
                     usernameFromDb,
+                    // ✅ ADDED: Pass the user's contact number
+                    userContactFromDb,
                     spaceId,
                     spaceName,
-                    space.getCategory(),  // ✅ store the category
+                    space.getCategory(),
                     date,
                     false,
                     createdAt,
-                    "Booked Visit"
+                    "Booked Visit",
+                    latitude,
+                    longitude
             );
 
             DatabaseReference bookingDataRef = FirebaseDatabase.getInstance(DB_URL)
@@ -183,12 +198,11 @@ public class SpaceDetailsFragment extends Fragment {
                     .child("bookings")
                     .push();
 
-            String bookingId = bookingDataRef.getKey(); // unique booking id
+            String bookingId = bookingDataRef.getKey();
 
             bookingDataRef.setValue(booking)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            // Save booking reference in user's node
                             DatabaseReference userBookingRef = FirebaseDatabase.getInstance(DB_URL)
                                     .getReference("users")
                                     .child(userId)
@@ -217,6 +231,6 @@ public class SpaceDetailsFragment extends Fragment {
                     });
 
         }).addOnFailureListener(e -> Snackbar.make(requireView(),
-                "Failed to fetch username: " + e.getMessage(), Snackbar.LENGTH_SHORT).show());
+                "Failed to fetch user data: " + e.getMessage(), Snackbar.LENGTH_SHORT).show());
     }
 }

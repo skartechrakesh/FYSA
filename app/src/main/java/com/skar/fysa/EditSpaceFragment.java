@@ -8,6 +8,7 @@ import android.content.res.ColorStateList;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,22 +32,30 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class EditSpaceFragment extends Fragment {
 
+    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
     private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;
     private FloatingActionButton btnMyLocation;
@@ -54,31 +63,42 @@ public class EditSpaceFragment extends Fragment {
     private MaterialButton btnSubmit;
     private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout;
     private MapView mapView;
-
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) moveToCurrentLocation();
+                else
+                    Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
+            });
     private DatabaseReference globalSpacesRef;
     private String currentUserId;
     private Space space;
-
     private InterstitialAd mInterstitialAd;
-    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private OnSpaceUpdatedListener onSpaceUpdatedListener;
 
-    public interface OnSpaceUpdatedListener {
-        void onSpaceUpdated(Space updatedSpace);
+    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+
+            input.setBoxStrokeColorStateList(states);
+        }
     }
 
     public void setOnSpaceUpdatedListener(OnSpaceUpdatedListener listener) {
         this.onSpaceUpdatedListener = listener;
     }
-
-    private final ActivityResultLauncher<String> locationPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
-                if (granted) moveToCurrentLocation();
-                else Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
-            });
 
     @Nullable
     @Override
@@ -266,20 +286,33 @@ public class EditSpaceFragment extends Fragment {
 
         GeoPoint center = (GeoPoint) mapView.getMapCenter();
 
-        space.setName(name);
-        space.setOwnerName(ownerName);
-        space.setContact(contact);
-        space.setAddress(address);
-        space.setLatitude(center.getLatitude());
-        space.setLongitude(center.getLongitude());
-        space.setCategory(category);
-        space.setVacancy(vacancyText.equals("Yes"));
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("name", name);
+        updates.put("ownerName", ownerName);
+        updates.put("contact", contact);
+        updates.put("address", address);
+        updates.put("latitude", center.getLatitude());
+        updates.put("longitude", center.getLongitude());
+        updates.put("category", category);
+        updates.put("vacancy", vacancyText.equals("Yes"));
 
-        // Update space under spaces/{spaceId}
         globalSpacesRef.child(space.getId())
-                .setValue(space)
+                .updateChildren(updates)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        // Update the local space object to reflect the changes
+                        space.setName(name);
+                        space.setOwnerName(ownerName);
+                        space.setContact(contact);
+                        space.setAddress(address);
+                        space.setLatitude(center.getLatitude());
+                        space.setLongitude(center.getLongitude());
+                        space.setCategory(category);
+                        space.setVacancy(vacancyText.equals("Yes"));
+
+                        // ✅ Call the new method to update bookings
+                        updateBookingsForSpace(space.getId(), space);
+
                         Bundle result = new Bundle();
                         result.putSerializable("space", space);
                         getParentFragmentManager().setFragmentResult("edit_space_result", result);
@@ -297,25 +330,36 @@ public class EditSpaceFragment extends Fragment {
                 });
     }
 
-    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
-        if (context == null || inputs == null) return;
+    // ✅ New method to update bookings
+    private void updateBookingsForSpace(String spaceId, Space updatedSpace) {
+        DatabaseReference bookingsRef = globalSpacesRef.child(spaceId).child("bookings");
 
-        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
-        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+        bookingsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    for (DataSnapshot bookingSnap : snapshot.getChildren()) {
+                        Map<String, Object> bookingUpdates = new HashMap<>();
+                        bookingUpdates.put("spaceName", updatedSpace.getName());
+                        bookingUpdates.put("spaceCategory", updatedSpace.getCategory());
+                        bookingUpdates.put("latitude", updatedSpace.getLatitude());
+                        bookingUpdates.put("longitude", updatedSpace.getLongitude());
 
-        for (TextInputLayout input : inputs) {
-            if (input == null) continue;
+                        bookingSnap.getRef().updateChildren(bookingUpdates)
+                                .addOnFailureListener(e -> {
+                                    // Log or handle the error for individual booking updates
+                                    Log.e("EditSpaceFragment", "Failed to update booking: " + e.getMessage());
+                                });
+                    }
+                }
+            }
 
-            ColorStateList states = new ColorStateList(
-                    new int[][]{
-                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
-                            new int[]{android.R.attr.state_enabled}
-                    },
-                    new int[]{focusedColor, unfocusedColor}
-            );
-
-            input.setBoxStrokeColorStateList(states);
-        }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Log or handle the error
+                Log.e("EditSpaceFragment", "Failed to read bookings for update: " + error.getMessage());
+            }
+        });
     }
 
     private void loadInterstitialAd() {
@@ -345,5 +389,9 @@ public class EditSpaceFragment extends Fragment {
     public void onPause() {
         super.onPause();
         mapView.onPause();
+    }
+
+    public interface OnSpaceUpdatedListener {
+        void onSpaceUpdated(Space updatedSpace);
     }
 }

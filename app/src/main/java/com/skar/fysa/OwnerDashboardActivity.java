@@ -36,7 +36,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
-    private TextView tvWelcome, drawerUserName;
+    private TextView drawerUserName;
     private long backPressedTime = 0;
 
     private AdView adViewBanner;
@@ -70,7 +70,6 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         btnHamburger = findViewById(R.id.btnHamburger);
         btnLogout = findViewById(R.id.btnLogout);
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
-        tvWelcome = findViewById(R.id.tvWelcome);
         drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvOwnerName);
         adViewBanner = findViewById(R.id.adViewBanner);
     }
@@ -96,9 +95,11 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 bottomNavigationView.setSelectedItemId(R.id.nav_add_new_space);
             } else if (itemId == R.id.nav_manage_spaces) {
                 fragment = new ManageSpacesFragment();
+                replaceFragment(fragment);
                 bottomNavigationView.setSelectedItemId(R.id.nav_manage_spaces);
             } else if (itemId == R.id.nav_bookings_dashboard) {
                 fragment = new BookingsOverviewFragment();
+                replaceFragment(fragment);
                 bottomNavigationView.setSelectedItemId(R.id.nav_bookings);
             } else if (itemId == R.id.nav_faq) {
                 fragment = new FaqFragment();
@@ -107,7 +108,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.nav_settings) {
                 fragment = new SettingsFragment();
-                openFragment(fragment);
+                replaceFragment(fragment);
                 bottomNavigationView.setSelectedItemId(R.id.nav_preferences);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
@@ -182,7 +183,6 @@ public class OwnerDashboardActivity extends AppCompatActivity {
     private void loadUsernameFromDatabase() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
-            tvWelcome.setText("Hi, User");
             drawerUserName.setText("Welcome User");
             return;
         }
@@ -203,9 +203,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
             } else {
                 displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE).getString(KEY_USERNAME, "User");
             }
-
-            tvWelcome.setText("Hi, " + displayName);
-            drawerUserName.setText(displayName);
+            drawerUserName.setText("Welcome, " + displayName);
         });
     }
 

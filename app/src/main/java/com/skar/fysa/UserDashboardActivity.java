@@ -38,7 +38,7 @@ public class UserDashboardActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnHamburger, btnLogout, btnThemeToggle;
-    private TextView tvWelcome, drawerUserName;
+    private TextView drawerUserName;
     private long backPressedTime = 0;
     private AdView adViewBannerUser;
 
@@ -71,7 +71,6 @@ public class UserDashboardActivity extends AppCompatActivity {
         btnHamburger = findViewById(R.id.btnHamburger);
         btnLogout = findViewById(R.id.btnLogout);
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
-        tvWelcome = findViewById(R.id.tvWelcome);
         drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvUserName);
         adViewBannerUser = findViewById(R.id.adViewBannerUser);
     }
@@ -88,35 +87,38 @@ public class UserDashboardActivity extends AppCompatActivity {
 
     private void setupDrawerActions() {
         navigationView.setNavigationItemSelectedListener(item -> {
-            Fragment fragment = null;
             int itemId = item.getItemId();
 
+            // Close the drawer immediately for any selection
+            drawerLayout.closeDrawer(GravityCompat.START);
+
             if (itemId == R.id.nav_find_space) {
-                fragment = new FindYourSpaceFragment();
+                Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+                if (currentFragment instanceof FindYourSpaceFragment) {
+                    return true;
+                }
+                replaceFragment(new FindYourSpaceFragment());
                 bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
-                replaceFragment(fragment); // don't add to back stack
             } else if (itemId == R.id.nav_my_bookings) {
-                fragment = new MyBookingsFragment();
+                replaceFragment(new MyBookingsFragment());
                 bottomNavigationView.setSelectedItemId(R.id.nav_my_bookings);
-                replaceFragment(fragment); // don't add to back stack
             } else if (itemId == R.id.nav_settings) {
-                fragment = new SettingsFragment();
-                replaceFragment(fragment); // optional: don't add to back stack
+                replaceFragment(new SettingsFragment());
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
             } else if (itemId == R.id.nav_faq) {
-                fragment = new FaqFragment();
-                openFragment(fragment); // add to back stack
-                drawerLayout.closeDrawer(GravityCompat.START);
+                // ✅ CHANGE: This logic specifically handles the FAQ's screen
+                // It replaces the current fragment without adding to the back stack
+                getSupportFragmentManager().popBackStack(); // Clear any existing fragments
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentContainer, new FaqFragment())
+                        .addToBackStack("faq_tag") // ✅ ADDED: Add a unique tag to the back stack
+                        .commit();
                 return true;
             } else if (itemId == R.id.nav_logout) {
                 showLogoutSnackbar();
                 return true;
             }
 
-            if (fragment != null && itemId != R.id.nav_faq) {
-                replaceFragment(fragment); // default behavior
-            }
-
-            drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
     }
@@ -179,7 +181,6 @@ public class UserDashboardActivity extends AppCompatActivity {
     private void loadUsernameFromDatabase() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
-            tvWelcome.setText("Hi, User");
             drawerUserName.setText("Welcome User");
             return;
         }
@@ -198,8 +199,7 @@ public class UserDashboardActivity extends AppCompatActivity {
             } else {
                 displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE).getString(KEY_USERNAME, "User");
             }
-            tvWelcome.setText("Hi, " + displayName);
-            drawerUserName.setText(displayName);
+            drawerUserName.setText("Welcome, " + displayName);
         });
     }
 

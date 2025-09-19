@@ -129,6 +129,32 @@
                     app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
+            <!-- Terms of Service -->
+            <LinearLayout
+                android:id="@+id/itemTermsOfService"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/terms_of_service"
+                    android:textSize="16sp"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_arrow_right"
+                    android:contentDescription="@string/help_amp_support"
+                    app:tint="?attr/colorOnSurface" />
+            </LinearLayout>
+
             <!-- About App -->
             <LinearLayout
                 android:id="@+id/itemAbout"

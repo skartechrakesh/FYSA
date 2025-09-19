@@ -166,6 +166,7 @@ public class BookingsOverviewFragment extends Fragment {
         TextView tvUsername = row.findViewById(R.id.tvBookingUsername);
         TextView tvDate = row.findViewById(R.id.tvBookingDate);
         TextView tvCategory = row.findViewById(R.id.tvBookingCategory);
+        TextView tvContact = row.findViewById(R.id.tvContact);
         TextView tvStatus = row.findViewById(R.id.tvBookingStatus);
         Button btnAction = row.findViewById(R.id.btnAction);
 
@@ -176,6 +177,7 @@ public class BookingsOverviewFragment extends Fragment {
         tvUsername.setText("Booked by: " + booking.getUsername());
         tvDate.setText(booking.getBookingDate());
         tvCategory.setText(booking.getSpaceCategory());
+        tvContact.setText("Contact: " + booking.getUserContact());
 
         // Set initial status text
         tvStatus.setText(booking.isRead() ? "Visit Accepted" : "Visit Booked");

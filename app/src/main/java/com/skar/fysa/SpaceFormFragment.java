@@ -38,6 +38,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -181,27 +182,8 @@ public class SpaceFormFragment extends Fragment {
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
 
-        btnSubmit.setOnClickListener(v -> {
-            adHandler.postDelayed(() -> {
-                if (mInterstitialAd != null) {
-                    mInterstitialAd.show(requireActivity());
-                    mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                        @Override
-                        public void onAdDismissedFullScreenContent() {
-                            submitForm();
-                            loadInterstitialAd();
-                        }
-
-                        @Override
-                        public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
-                            submitForm();
-                        }
-                    });
-                } else {
-                    submitForm();
-                }
-            }, 1000);
-        });
+        // ✅ Updated click listener to perform validation before showing the ad
+        btnSubmit.setOnClickListener(v -> submitForm());
 
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
@@ -274,9 +256,6 @@ public class SpaceFormFragment extends Fragment {
     // ---------------------------------------------------------------------------------------------
     // Form Handling
     // ---------------------------------------------------------------------------------------------
-    // ---------------------------------------------------------------------------------------------
-// Form Handling
-// ---------------------------------------------------------------------------------------------
     private void submitForm() {
         String name = Objects.requireNonNull(inputName.getText()).toString().trim();
         String ownerName = Objects.requireNonNull(inputOwnerName.getText()).toString().trim();
@@ -294,10 +273,57 @@ public class SpaceFormFragment extends Fragment {
             return;
         }
 
+        // Check for existing space name before attempting to save
+        checkForExistingSpace(name, ownerName, contact, address, center);
+    }
+
+    private void checkForExistingSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
+        globalSpacesRef.orderByChild("name").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    Snackbar.make(fragmentView, "Space name already exists. Please use a different name.", Snackbar.LENGTH_LONG).show();
+                } else {
+                    // ✅ If no duplicate is found, show the ad and then save the space
+                    showAdAndSaveSpace(name, ownerName, contact, address, center);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Snackbar.make(fragmentView, "Error checking for space name. Saving anyway.", Snackbar.LENGTH_LONG).show();
+                // ✅ If the check fails, still proceed to save
+                showAdAndSaveSpace(name, ownerName, contact, address, center);
+            }
+        });
+    }
+
+    private void showAdAndSaveSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
+        adHandler.postDelayed(() -> {
+            if (mInterstitialAd != null) {
+                mInterstitialAd.show(requireActivity());
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        saveNewSpace(name, ownerName, contact, address, center);
+                        loadInterstitialAd();
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                        saveNewSpace(name, ownerName, contact, address, center);
+                    }
+                });
+            } else {
+                saveNewSpace(name, ownerName, contact, address, center);
+            }
+        }, 1000);
+    }
+
+    private void saveNewSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
         String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
         String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
 
-        // Generate a new unique space ID
         String spaceId = globalSpacesRef.push().getKey();
         if (spaceId == null) {
             Snackbar.make(fragmentView, "Failed to create ID", Snackbar.LENGTH_SHORT).show();
@@ -309,17 +335,14 @@ public class SpaceFormFragment extends Fragment {
                 uid, ownerName, address, contact, email, true
         );
 
-        // Save the space under spaces/{spaceId}
         globalSpacesRef.child(spaceId).setValue(space).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
 
-                // Add reference under current user for multiple spaces
                 DatabaseReference userRef = FirebaseDatabase.getInstance(
                                 "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
                         .getReference("users")
                         .child(uid);
 
-                // ✅ Only add space_reference for owners
                 userRef.child("space_reference").child(spaceId).setValue(true)
                         .addOnCompleteListener(refTask -> {
                             if (refTask.isSuccessful()) {
@@ -365,7 +388,7 @@ public class SpaceFormFragment extends Fragment {
                 "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
         ).getReference("users").child(uid);
 
-        userRef.addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) return;

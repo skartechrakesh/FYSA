@@ -36,13 +36,33 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- Cancel Visit Button -->
-    <Button
-        android:id="@+id/btnAction"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        style="?android:attr/buttonBarStyle"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="?attr/colorSecondary"
-        android:text="@string/cancel_visit"
-        android:textColor="@color/textPrimary" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp">
+
+        <!-- Cancel Visit Button -->
+        <Button
+            android:id="@+id/btnAction"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?attr/colorSecondary"
+            android:layout_marginEnd="12dp"
+            android:text="@string/cancel_visit"
+            android:textColor="@color/textPrimary" />
+
+        <!-- Cancel Visit Button -->
+        <Button
+            android:id="@+id/btnDirections"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="?attr/colorSuccess"
+            android:text="Open in Maps"
+            android:textColor="@color/textPrimary" />
+    </LinearLayout>
 </LinearLayout>

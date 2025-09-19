@@ -1,5 +1,7 @@
 package com.skar.fysa;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -7,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,6 +30,7 @@ import com.google.firebase.database.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MyBookingsFragment extends Fragment {
 
@@ -106,6 +110,7 @@ public class MyBookingsFragment extends Fragment {
                         boolean isUserBooking = currentUserId.equals(bookingData.getUserId());
 
                         if (isOwner || isUserBooking) {
+                            // ✅ Updated constructor call to pass all required arguments
                             Booking booking = new Booking(
                                     bookingSnap.getKey(),
                                     bookingData.getUserId(),
@@ -115,9 +120,12 @@ public class MyBookingsFragment extends Fragment {
                                     category,
                                     bookingData.getBookingDate(),
                                     bookingData.getStatus(),
-                                    bookingData.getUsername()
+                                    bookingData.getUsername(),
+                                    bookingData.getCreatedAt(),
+                                    bookingData.getLatitude(),
+                                    bookingData.getLongitude()
                             );
-                            booking.setCreatedAt(bookingData.getCreatedAt());
+
                             bookingList.add(booking);
                         }
                     }
@@ -224,6 +232,23 @@ public class MyBookingsFragment extends Fragment {
         adView.setNativeAd(nativeAd);
     }
 
+    private void getDirections(double latitude, double longitude) {
+        if (latitude == 0.0 && longitude == 0.0) {
+            Snackbar.make(requireView(), "Location not available for this booking.", Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uri = String.format(Locale.getDefault(), "geo:0,0?q=%f,%f", latitude, longitude);
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
+        mapIntent.setPackage("com.google.android.apps.maps");
+
+        if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
+            startActivity(mapIntent);
+        } else {
+            Toast.makeText(requireContext(), "Google Maps app not installed.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -265,6 +290,7 @@ public class MyBookingsFragment extends Fragment {
 
         private class BookingViewHolder extends RecyclerView.ViewHolder {
             TextView tvSpaceName, tvSpaceType, tvDate, tvStatus, tvCancel;
+            Button btnDirections;
 
             BookingViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -273,6 +299,7 @@ public class MyBookingsFragment extends Fragment {
                 tvDate = itemView.findViewById(R.id.tvBookingDate);
                 tvStatus = itemView.findViewById(R.id.tvBookingStatus);
                 tvCancel = itemView.findViewById(R.id.btnAction);
+                btnDirections = itemView.findViewById(R.id.btnDirections);
             }
 
             void bind(Booking booking) {
@@ -280,7 +307,16 @@ public class MyBookingsFragment extends Fragment {
                 tvSpaceType.setText(booking.getSpaceType());
                 tvDate.setText(booking.getBookingDate());
                 tvStatus.setText(booking.getStatus());
-                tvCancel.setOnClickListener(v -> cancelBooking(booking));
+
+                if (tvCancel != null) {
+                    tvCancel.setOnClickListener(v -> cancelBooking(booking));
+                }
+
+                if (btnDirections != null) {
+                    btnDirections.setOnClickListener(v -> {
+                        getDirections(booking.getLatitude(), booking.getLongitude());
+                    });
+                }
             }
         }
     }

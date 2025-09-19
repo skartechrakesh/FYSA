@@ -346,7 +346,7 @@ public class FindYourSpaceFragment extends Fragment {
         }
 
         static class SpaceVH extends RecyclerView.ViewHolder {
-            TextView tvName, tvCategory, tvOwner, tvAddress, tvContact, tvDistance, tvVacancy;
+            TextView tvName, tvCategory, tvOwner, tvAddress, tvDistance, tvVacancy;
             CardView card;
 
             SpaceVH(@NonNull View itemView) {
@@ -356,7 +356,6 @@ public class FindYourSpaceFragment extends Fragment {
                 tvCategory = itemView.findViewById(R.id.tvCategory);
                 tvOwner = itemView.findViewById(R.id.tvOwner);
                 tvAddress = itemView.findViewById(R.id.tvAddress);
-                tvContact = itemView.findViewById(R.id.tvContact);
                 tvDistance = itemView.findViewById(R.id.tvDistance);
                 tvVacancy = itemView.findViewById(R.id.tvVacancy);
             }
@@ -366,7 +365,6 @@ public class FindYourSpaceFragment extends Fragment {
                 tvCategory.setText(space.getCategory());
                 tvOwner.setText(space.getOwnerName());
                 tvAddress.setText(space.getAddress());
-                tvContact.setText(space.getContact());
                 tvVacancy.setText(Boolean.TRUE.equals(space.isVacancy())
                         ? "Vacancy Available"
                         : "Not Available");

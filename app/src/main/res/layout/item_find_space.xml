@@ -53,15 +53,6 @@
             android:textSize="13sp"
             android:textColor="?attr/colorOnSurface"/>
 
-        <!-- Contact -->
-        <TextView
-            android:id="@+id/tvContact"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="13sp"
-            android:textColor="?attr/colorOnSurface"/>
-
         <!-- Vacancy -->
         <TextView
             android:id="@+id/tvVacancy"

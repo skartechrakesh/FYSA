@@ -36,15 +36,34 @@
             android:layout_marginTop="2dp"/>
     </LinearLayout>
 
-    <!-- Booking Date -->
-    <TextView
-        android:id="@+id/tvBookingDate"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/date"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="14sp"
-        android:layout_marginTop="2dp"/>
+        android:orientation="horizontal"
+        android:layout_marginTop="6dp">
+
+        <!-- Booking Date -->
+        <TextView
+            android:id="@+id/tvBookingDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/date"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:layout_marginTop="2dp"/>
+
+        <TextView
+            android:id="@+id/tvContact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/contact"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
 
     <!-- Type, Status, Approve Button -->
     <LinearLayout
@@ -81,6 +100,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/mark_as_read"
+            android:textColor="?attr/colorSurfaceInverse"
             android:backgroundTint="@color/btnSecondary"
             android:visibility="gone"/>
     </LinearLayout>
