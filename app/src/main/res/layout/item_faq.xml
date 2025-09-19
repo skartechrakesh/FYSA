@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:text="@string/sample_question"
         android:textStyle="bold"
-        android:textSize="16sp"
+        android:textSize="17sp"
         android:textColor="?attr/colorOnSurface" />
 
     <TextView
@@ -20,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/sample_answer_goes_here"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:visibility="gone"
         android:textColor="?attr/colorOnSurface"
         android:paddingTop="4dp" />
