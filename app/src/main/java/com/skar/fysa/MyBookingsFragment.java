@@ -26,7 +26,11 @@ import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.*;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,22 +38,18 @@ import java.util.Locale;
 
 public class MyBookingsFragment extends Fragment {
 
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+    private static final String NATIVE_AD_UNIT_ID =
+            "ca-app-pub-3940256099942544/2247696110"; // Test Ad Unit ID
+    private final List<Booking> bookingList = new ArrayList<>();
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerBookings;
     private BookingAdapter adapter;
     private NativeAdView nativeAdView;
     private NativeAd loadedNativeAd;
-
-    private final List<Booking> bookingList = new ArrayList<>();
-
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private DatabaseReference spacesRef;
     private ValueEventListener spacesListener;
-
-    private static final String NATIVE_AD_UNIT_ID =
-            "ca-app-pub-3940256099942544/2247696110"; // Test Ad Unit ID
 
     public MyBookingsFragment() {
         super(R.layout.fragment_my_bookings);

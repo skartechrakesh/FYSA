@@ -46,6 +46,25 @@ public class RegisterActivity extends AppCompatActivity {
     private TextInputEditText passwordEdit, confirmPasswordEdit;
     private FirebaseAuth auth;
 
+    public static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+            input.setBoxStrokeColorStateList(states);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Load the saved theme before calling super.onCreate()
@@ -106,43 +125,40 @@ public class RegisterActivity extends AppCompatActivity {
         recreate();
     }
 
-    public static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
-        if (context == null || inputs == null) return;
-
-        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
-        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
-
-        for (TextInputLayout input : inputs) {
-            if (input == null) continue;
-            ColorStateList states = new ColorStateList(
-                    new int[][]{
-                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
-                            new int[]{android.R.attr.state_enabled}
-                    },
-                    new int[]{focusedColor, unfocusedColor}
-            );
-            input.setBoxStrokeColorStateList(states);
-        }
-    }
-
     private void setupPasswordValidation() {
         if (passwordEdit != null) {
             passwordEdit.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-                @Override public void afterTextChanged(Editable s) {
-                    if (isPasswordWeak(s.toString())) passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (isPasswordWeak(s.toString()))
+                        passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
                     else passwordLayout.setError(null);
                 }
             });
         }
         if (confirmPasswordEdit != null) {
             confirmPasswordEdit.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-                @Override public void afterTextChanged(Editable s) {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
                     String pwd = passwordEdit != null ? Objects.requireNonNull(passwordEdit.getText()).toString() : "";
-                    if (!s.toString().equals(pwd)) confirmPasswordLayout.setError("Passwords do not match");
+                    if (!s.toString().equals(pwd))
+                        confirmPasswordLayout.setError("Passwords do not match");
                     else confirmPasswordLayout.setError(null);
                 }
             });

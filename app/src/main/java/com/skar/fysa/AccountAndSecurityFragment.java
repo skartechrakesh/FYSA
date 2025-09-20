@@ -40,19 +40,16 @@ import java.util.Locale;
 
 public class AccountAndSecurityFragment extends Fragment {
 
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private ImageView imgProfile;
     private ImageButton btnEditPassword;
     private EditText etName, etUsername, etEmail, etContact;
     private TextView tvAccountType, tvEmailVerified;
     private Button btnSave, btnVerifyEmail, btnDeleteAccount;
-
     private DatabaseReference userRef;
     private FirebaseUser currentUser;
     private String username, accountType;
-
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private InterstitialAd mInterstitialAd;
 
     @Nullable

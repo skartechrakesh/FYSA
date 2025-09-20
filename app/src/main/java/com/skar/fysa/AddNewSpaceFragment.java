@@ -37,7 +37,9 @@ public class AddNewSpaceFragment extends Fragment {
         return view;
     }
 
-    /** Open SpaceFormFragment with category argument */
+    /**
+     * Open SpaceFormFragment with category argument
+     */
     private void openForm(String category) {
         if (getActivity() == null) return;
 

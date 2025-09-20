@@ -137,8 +137,8 @@
                     android:id="@+id/crosshair"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:contentDescription="@string/crosshair"
                     android:layout_centerInParent="true"
+                    android:contentDescription="@string/crosshair"
                     android:src="@drawable/ic_crosshair"
                     app:tint="@android:color/holo_red_dark" />
 
@@ -162,10 +162,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
             android:layout_marginTop="20dp"
-            android:text="@string/submit"
+            android:layout_marginEnd="24dp"
             android:backgroundTint="@color/btnSecondary"
+            android:text="@string/submit"
             android:textColor="@color/textPrimary"
             app:cornerRadius="12dp"
             tools:ignore="TouchTargetSizeCheck,VisualLintButtonSize" />

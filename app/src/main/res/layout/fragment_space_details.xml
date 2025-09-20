@@ -12,10 +12,10 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -27,77 +27,77 @@
                 android:id="@+id/tvName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="8dp"
                 android:text="@string/Space_Name"
-                android:textSize="20sp"
-                android:textStyle="bold"
                 android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="8dp"/>
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <!-- Type -->
             <TextView
                 android:id="@+id/tvCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="4dp"
                 android:text="@string/type"
-                android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="4dp"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <!-- Owner Name -->
             <TextView
                 android:id="@+id/tvOwnerName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="4dp"
                 android:text=""
-                android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="4dp"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <!-- Address -->
             <TextView
                 android:id="@+id/tvAddress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="4dp"
                 android:text=""
-                android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="4dp"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <!-- Contact -->
             <TextView
                 android:id="@+id/tvContact"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="4dp"
                 android:text=""
-                android:textStyle="bold"
-                android:textSize="16sp"
                 android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="4dp"/>
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
             <!-- Distance -->
             <TextView
                 android:id="@+id/tvDistance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:paddingBottom="12dp"
                 android:text=""
-                android:textColor="?attr/colorOnSurface"
-                android:paddingBottom="12dp"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <!-- Buttons -->
             <Button
                 android:id="@+id/btnDirections"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/black"
                 android:backgroundTint="@color/btnSecondary"
                 android:text="@string/get_directions_in_google_maps"
+                android:textColor="@color/black"
                 tools:ignore="VisualLintButtonSize" />
 
             <Button
                 android:id="@+id/btnBook"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@color/light_green_500"
                 android:text="@string/book_visit"
                 android:textColor="@color/black"
-                android:backgroundTint="@color/light_green_500"
-                android:layout_marginTop="12dp"
                 tools:ignore="VisualLintButtonSize" />
 
         </LinearLayout>

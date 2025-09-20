@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -15,10 +16,10 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
+
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
@@ -70,7 +71,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
         btnHamburger = findViewById(R.id.btnHamburger);
         btnLogout = findViewById(R.id.btnLogout);
         btnThemeToggle = findViewById(R.id.btnThemeToggle);
-        drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvOwnerName);
+        drawerUserName = navigationView.getHeaderView(0).findViewById(R.id.tvOUName);
         adViewBanner = findViewById(R.id.adViewBanner);
     }
 

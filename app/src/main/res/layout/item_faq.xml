@@ -2,26 +2,26 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
     android:orientation="vertical"
-    android:padding="12dp"
-    android:background="?attr/selectableItemBackground">
+    android:padding="12dp">
 
     <TextView
         android:id="@+id/tvQuestion"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/sample_question"
-        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="17sp"
-        android:textColor="?attr/colorOnSurface" />
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/tvAnswer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingTop="4dp"
         android:text="@string/sample_answer_goes_here"
-        android:textSize="16sp"
-        android:visibility="gone"
         android:textColor="?attr/colorOnSurface"
-        android:paddingTop="4dp" />
+        android:textSize="16sp"
+        android:visibility="gone" />
 </LinearLayout>

@@ -26,11 +26,10 @@ import java.util.List;
 
 public class ManageSpacesFragment extends Fragment {
 
+    private static final int BATCH_SIZE = 5;
     private LinearLayout spacesListContainer;
     private SwipeRefreshLayout swipeRefreshLayout;
     private DatabaseReference globalSpacesRef;
-
-    private static final int BATCH_SIZE = 5;
 
     @Nullable
     @Override

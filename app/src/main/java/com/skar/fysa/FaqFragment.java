@@ -9,7 +9,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -23,10 +22,9 @@ import com.google.firebase.database.ValueEventListener;
 
 public class FaqFragment extends Fragment {
 
+    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private LinearLayout faqContainer;
     private String accountType = "user"; // default
-    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private View rootView;
 
     @Nullable
@@ -134,7 +132,7 @@ public class FaqFragment extends Fragment {
                 .inflate(R.layout.item_faq, faqContainer, false);
 
         TextView tvQuestion = faqItem.findViewById(R.id.tvQuestion);
-        TextView tvAnswer   = faqItem.findViewById(R.id.tvAnswer);
+        TextView tvAnswer = faqItem.findViewById(R.id.tvAnswer);
 
         tvQuestion.setText(question);
         tvAnswer.setText(answer);

@@ -8,19 +8,21 @@ import android.os.Handler;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+
 import com.google.android.material.snackbar.Snackbar;
+
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final Handler backPressHandler = new Handler();
-    private boolean doubleBackToExitPressedOnce = false;
-
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
+    private final Handler backPressHandler = new Handler();
+    private boolean doubleBackToExitPressedOnce = false;
 
     @SuppressLint("SetTextI18n")
     @Override

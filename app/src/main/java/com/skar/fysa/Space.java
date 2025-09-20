@@ -30,7 +30,8 @@ public class Space implements Serializable {
     private Integer distanceMeters; // Calculated dynamically, not stored in Firebase
 
     // --- Required empty constructor for Firebase ---
-    public Space() {}
+    public Space() {
+    }
 
     // --- Full constructor ---
     public Space(String id, String name, String category,
@@ -52,36 +53,110 @@ public class Space implements Serializable {
     }
 
     // --- Getters ---
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getCategory() { return category; }
-    public double getLatitude() { return latitude; }
-    public double getLongitude() { return longitude; }
-    public String getOwnerId() { return ownerId; }
-    public String getOwnerName() { return ownerName; }
-    public String getAddress() { return address; }
-    public String getContact() { return contact; }
-    public String getEmail() { return email; }
-    public String getDescription() { return description; }
-    public Boolean isVacancy() { return vacancy; }
-
-    @Exclude
-    public Integer getDistanceMeters() { return distanceMeters; }
+    public String getId() {
+        return id;
+    }
 
     // --- Setters ---
-    public void setId(String id) { this.id = id; }
-    public void setName(String name) { this.name = name; }
-    public void setCategory(String category) { this.category = category; }
-    public void setLatitude(double latitude) { this.latitude = latitude; }
-    public void setLongitude(double longitude) { this.longitude = longitude; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
-    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
-    public void setAddress(String address) { this.address = address; }
-    public void setContact(String contact) { this.contact = contact; }
-    public void setEmail(String email) { this.email = email; }
-    public void setDescription(String description) { this.description = description; }
-    public void setVacancy(Boolean vacancy) { this.vacancy = vacancy != null ? vacancy : true; }
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Boolean isVacancy() {
+        return vacancy;
+    }
 
     @Exclude
-    public void setDistanceMeters(Integer distanceMeters) { this.distanceMeters = distanceMeters; }
+    public Integer getDistanceMeters() {
+        return distanceMeters;
+    }
+
+    @Exclude
+    public void setDistanceMeters(Integer distanceMeters) {
+        this.distanceMeters = distanceMeters;
+    }
+
+    public void setVacancy(Boolean vacancy) {
+        this.vacancy = vacancy != null ? vacancy : true;
+    }
 }

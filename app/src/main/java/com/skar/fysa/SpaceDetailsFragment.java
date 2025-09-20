@@ -30,16 +30,14 @@ import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
+    private static final String DB_URL =
+            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     // ✅ ADDED: Variable for the category TextView
     private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory;
     private Button btnDirections, btnBook;
-
     private Space space;
     private String spaceId, spaceName, ownerId;
     private double latitude, longitude;
-
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     @Nullable
     @Override

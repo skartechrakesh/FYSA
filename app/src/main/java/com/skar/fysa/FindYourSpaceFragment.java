@@ -8,18 +8,18 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.cardview.widget.CardView;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdLoader;
@@ -31,34 +31,43 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.database.*;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class FindYourSpaceFragment extends Fragment {
 
     private static final double MAX_DISTANCE_METERS = 5000;
     private static final String TAG = "FindYourSpaceFragment";
     private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test
-
+    private final List<Space> spaceList = new ArrayList<>();
+    private final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private RecyclerView recyclerView;
     private SpacesAdapter adapter;
-    private final List<Space> spaceList = new ArrayList<>();
     private Location userLocation;
-
     private TextView btnHostel, btnPG, btnRoom, btnHouse, btnFlat;
     private SwipeRefreshLayout swipeRefresh;
     private NativeAdView nativeAdView;
     private NativeAd loadedNativeAd;
-
-    private final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private String selectedCategory = null;
     private FusedLocationProviderClient fusedLocationClient;
 
     private String lastKey = null;
     private boolean isLoading = false;
 
-    private final ActivityResultLauncher<String[]> permissionLauncher =
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("selectedCategory", selectedCategory);
+        outState.putSerializable("spaceList", new ArrayList<>(spaceList));
+    }    private final ActivityResultLauncher<String[]> permissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
                 Boolean fine = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
                 Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
@@ -69,13 +78,6 @@ public class FindYourSpaceFragment extends Fragment {
                     Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
                 }
             });
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString("selectedCategory", selectedCategory);
-        outState.putSerializable("spaceList", new ArrayList<>(spaceList));
-    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -211,7 +213,8 @@ public class FindYourSpaceFragment extends Fragment {
                 for (DataSnapshot spaceSnap : snapshot.getChildren()) {
                     Space space = spaceSnap.getValue(Space.class);
                     if (space == null || !Boolean.TRUE.equals(space.isVacancy())) continue;
-                    if (!spaceSnap.hasChild("latitude") || !spaceSnap.hasChild("longitude")) continue;
+                    if (!spaceSnap.hasChild("latitude") || !spaceSnap.hasChild("longitude"))
+                        continue;
 
                     if (space.getId() == null || space.getId().isEmpty()) {
                         space.setId(spaceSnap.getKey());
@@ -310,13 +313,8 @@ public class FindYourSpaceFragment extends Fragment {
 
     // ======= ADAPTER =======
     private static class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
-        public interface OnSpaceClick {
-            void onClick(Space space);
-        }
-
         private final List<Space> items = new ArrayList<>();
         private final OnSpaceClick onSpaceClick;
-
         public SpacesAdapter(List<Space> initial, OnSpaceClick onSpaceClick) {
             if (initial != null) items.addAll(initial);
             this.onSpaceClick = onSpaceClick;
@@ -343,6 +341,10 @@ public class FindYourSpaceFragment extends Fragment {
         @Override
         public int getItemCount() {
             return items.size();
+        }
+
+        public interface OnSpaceClick {
+            void onClick(Space space);
         }
 
         static class SpaceVH extends RecyclerView.ViewHolder {
@@ -381,4 +383,6 @@ public class FindYourSpaceFragment extends Fragment {
             }
         }
     }
+
+
 }

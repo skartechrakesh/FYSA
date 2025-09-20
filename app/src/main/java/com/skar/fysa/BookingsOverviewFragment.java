@@ -1,10 +1,12 @@
 package com.skar.fysa;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -13,20 +15,13 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import android.content.res.ColorStateList;
-import android.widget.Button;
-
-import com.google.android.material.snackbar.Snackbar;
-
-import java.util.Objects;
-
-
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -44,23 +39,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 public class BookingsOverviewFragment extends Fragment {
-
-    private LinearLayout bookingsListContainer;
-    private BarChart barChart;
-    private DatabaseReference spacesRef;
-    private FirebaseUser currentUser;
-    private ValueEventListener bookingsListener;
 
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private static final SimpleDateFormat sdf =
             new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-
-    private final ArrayList<DataSnapshot> allBookings = new ArrayList<>();
-    private int loadedCount = 0;
     private static final int BATCH_SIZE = 10;
+    private final ArrayList<DataSnapshot> allBookings = new ArrayList<>();
+    private LinearLayout bookingsListContainer;
+    private BarChart barChart;
+    private DatabaseReference spacesRef;
+    private FirebaseUser currentUser;
+    private ValueEventListener bookingsListener;
+    private int loadedCount = 0;
 
     @Nullable
     @Override
@@ -117,7 +111,8 @@ public class BookingsOverviewFragment extends Fragment {
                                     int month = cal.get(Calendar.MONTH);
                                     monthlyCounts.put(month, monthlyCounts.getOrDefault(month, 0) + 1);
                                 }
-                            } catch (ParseException ignored) {}
+                            } catch (ParseException ignored) {
+                            }
                         }
                     }
                 }
@@ -128,7 +123,8 @@ public class BookingsOverviewFragment extends Fragment {
                         Date d1 = sdf.parse(b1.child("bookingDate").getValue(String.class));
                         Date d2 = sdf.parse(b2.child("bookingDate").getValue(String.class));
                         if (d1 != null && d2 != null) return d2.compareTo(d1);
-                    } catch (ParseException ignored) {}
+                    } catch (ParseException ignored) {
+                    }
                     return 0;
                 });
 
@@ -233,7 +229,7 @@ public class BookingsOverviewFragment extends Fragment {
 
     private void updateBarChart(Map<Integer, Integer> monthlyCounts) {
         ArrayList<BarEntry> entries = new ArrayList<>();
-        String[] monthLabels = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+        String[] monthLabels = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
         for (int i = 0; i < 12; i++)
             entries.add(new BarEntry(i, monthlyCounts.getOrDefault(i, 0)));

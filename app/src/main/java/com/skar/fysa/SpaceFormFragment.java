@@ -49,6 +49,7 @@ import java.util.Objects;
 
 public class SpaceFormFragment extends Fragment {
 
+    private final Handler adHandler = new Handler();
     // 🔹 UI Components
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
     private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
@@ -57,21 +58,39 @@ public class SpaceFormFragment extends Fragment {
     private FloatingActionButton btnMyLocation;
     private MapView mapView;
     private View fragmentView;
-
-    // 🔹 Firebase
-    private DatabaseReference globalSpacesRef;
-    private String category;
-
-    // 🔹 Ads
-    private InterstitialAd mInterstitialAd;
-    private final Handler adHandler = new Handler();
-
     // 🔹 Location Permission Launcher
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) moveToCurrentLocation();
-                else Snackbar.make(fragmentView, "Location permission denied", Snackbar.LENGTH_SHORT).show();
+                else
+                    Snackbar.make(fragmentView, "Location permission denied", Snackbar.LENGTH_SHORT).show();
             });
+    // 🔹 Firebase
+    private DatabaseReference globalSpacesRef;
+    private String category;
+    // 🔹 Ads
+    private InterstitialAd mInterstitialAd;
+
+    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
+        if (context == null || inputs == null) return;
+
+        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
+        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
+
+        for (TextInputLayout input : inputs) {
+            if (input == null) continue;
+
+            ColorStateList states = new ColorStateList(
+                    new int[][]{
+                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
+                            new int[]{android.R.attr.state_enabled}
+                    },
+                    new int[]{focusedColor, unfocusedColor}
+            );
+
+            input.setBoxStrokeColorStateList(states);
+        }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Lifecycle
@@ -152,28 +171,6 @@ public class SpaceFormFragment extends Fragment {
         btnMyLocation = view.findViewById(R.id.btnMyLocation);
         mapView = view.findViewById(R.id.mapView);
     }
-
-    private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
-        if (context == null || inputs == null) return;
-
-        int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
-        int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
-
-        for (TextInputLayout input : inputs) {
-            if (input == null) continue;
-
-            ColorStateList states = new ColorStateList(
-                    new int[][]{
-                            new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
-                            new int[]{android.R.attr.state_enabled}
-                    },
-                    new int[]{focusedColor, unfocusedColor}
-            );
-
-            input.setBoxStrokeColorStateList(states);
-        }
-    }
-
 
     // ---------------------------------------------------------------------------------------------
     // Listeners

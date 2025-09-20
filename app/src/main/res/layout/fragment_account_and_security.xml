@@ -11,8 +11,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
         <!-- Profile Image + Edit Icon -->
         <FrameLayout
@@ -43,7 +43,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/full_name"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <EditText
                 android:id="@+id/etName"
@@ -52,8 +52,8 @@
                 android:autofillHints=""
                 android:hint="@string/full_name"
                 android:inputType="textPersonName"
-                android:textColor="?attr/colorOnSurface"
                 android:minHeight="48dp"
+                android:textColor="?attr/colorOnSurface"
                 tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
             <!-- User Name -->
@@ -61,7 +61,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/username"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
 
             <EditText
                 android:id="@+id/etUsername"
@@ -70,8 +70,8 @@
                 android:hint="@string/username"
                 android:importantForAutofill="no"
                 android:inputType="text"
-                android:textColor="?attr/colorOnSurface"
                 android:minHeight="48dp"
+                android:textColor="?attr/colorOnSurface"
                 tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
             <!-- Email with Verify -->
@@ -79,12 +79,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/email"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <EditText
                     android:id="@+id/etEmail"
@@ -92,29 +93,29 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:autofillHints=""
+                    android:background="?attr/colorOutline"
                     android:enabled="false"
                     android:hint="@string/email"
                     android:inputType="textEmailAddress"
-                    android:textColor="?attr/colorOnSurface"
-                    android:background="?attr/colorOutline"
                     android:minHeight="48dp"
+                    android:textColor="?attr/colorOnSurface"
                     tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
                 <Button
                     android:id="@+id/btnVerifyEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:backgroundTint="?attr/colorOnSurface"
-                    android:text="@string/verify"
-                    android:layout_marginStart="8dp"/>
+                    android:text="@string/verify" />
 
                 <TextView
                     android:id="@+id/tvEmailVerified"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:text=""
-                    android:textColor="@color/green_500"
-                    android:layout_marginStart="8dp"/>
+                    android:textColor="@color/green_500" />
             </LinearLayout>
 
             <!-- Password -->
@@ -122,24 +123,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/password"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <EditText
                     android:id="@+id/etPassword"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:background="?attr/colorOutline"
+                    android:enabled="false"
                     android:inputType="textPassword"
                     android:minHeight="48dp"
                     android:paddingLeft="8dp"
-                    android:enabled="false"
                     android:text="@string/stars_password"
-                    android:background="?attr/colorOutline"
                     android:textColor="?attr/colorOnSurface"
                     tools:ignore="Autofill,VisualLintTextFieldSize" />
 
@@ -147,11 +149,11 @@
                     android:id="@+id/btnEditPassword"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:scaleType="centerInside"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_edit"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/edit_password"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_edit"
                     app:tint="?attr/colorOnSurface" />
             </LinearLayout>
 
@@ -160,12 +162,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/contact_number"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <EditText
                     android:id="@+id/etContact"
@@ -175,8 +178,8 @@
                     android:hint="@string/contact_number"
                     android:importantForAutofill="no"
                     android:inputType="phone"
-                    android:textColor="?attr/colorOnSurface"
                     android:minHeight="48dp"
+                    android:textColor="?attr/colorOnSurface"
                     tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
             </LinearLayout>
 
@@ -185,26 +188,27 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/account_type"
-                android:textColor="?attr/colorOnSurface"/>
+                android:textColor="?attr/colorOnSurface" />
+
             <TextView
                 android:id="@+id/tvAccountType"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="?attr/colorOutline"
                 android:padding="8dp"
-                android:textSize="18sp"
                 android:text="test"
                 android:textColor="?attr/colorOnSurface"
-                android:background="?attr/colorOutline"/>
+                android:textSize="18sp" />
 
             <!-- Save Button -->
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="?attr/colorSuccess"
                 android:text="@string/save"
                 android:textColor="@color/black"
-                android:backgroundTint="?attr/colorSuccess"
-                android:layout_marginTop="24dp"
                 tools:ignore="VisualLintButtonSize" />
 
             <!-- Delete Account Button -->
@@ -212,9 +216,9 @@
                 android:id="@+id/btnDeleteAccount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/delete_account"
                 android:layout_marginTop="16dp"
                 android:backgroundTint="@color/red_500"
+                android:text="@string/delete_account"
                 android:textColor="@color/black"
                 tools:ignore="VisualLintButtonSize" />
         </LinearLayout>

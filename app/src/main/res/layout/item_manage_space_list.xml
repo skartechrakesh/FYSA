@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="horizontal"
-    android:padding="12dp"
+    android:background="?android:attr/colorBackground"
     android:gravity="center_vertical"
-    android:background="?android:attr/colorBackground">
+    android:orientation="horizontal"
+    android:padding="12dp">
 
     <!-- Left side: Space name + vacancy stacked vertically -->
     <LinearLayout
@@ -22,18 +22,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/Space_Name"
-            android:textSize="16sp"
-            android:textColor="?attr/colorOnSurface" />
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp" />
 
         <!-- Vacancy Status -->
         <TextView
             android:id="@+id/vacancySwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="Vacancy Available: Yes"
-            android:textSize="14sp"
             android:textColor="?attr/colorOnSurface"
-            android:layout_marginTop="4dp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <!-- Edit Button -->
@@ -54,7 +54,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_delete"
         android:contentDescription="@string/delete_space"
+        android:src="@drawable/ic_delete"
         app:tint="@color/red_700" />
 </LinearLayout>

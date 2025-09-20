@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    android:elevation="4dp"
-    android:foreground="?attr/selectableItemBackground"
     android:background="?android:attr/colorBackground"
     android:clickable="true"
-    android:focusable="true">
+    android:elevation="4dp"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="12dp">
 
         <!-- Space Name -->
         <TextView
@@ -22,9 +21,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp"
-            android:textColor="?attr/colorOnSurface"/>
+            android:textStyle="bold" />
 
         <!-- Type -->
         <TextView
@@ -32,8 +31,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="14sp"
-            android:textColor="@color/linkText"/>
+            android:textColor="@color/linkText"
+            android:textSize="14sp" />
 
         <!-- Owner -->
         <TextView
@@ -41,8 +40,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="13sp"
-            android:textColor="?attr/colorOnSurface"/>
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp" />
 
         <!-- Address -->
         <TextView
@@ -50,18 +49,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="13sp"
-            android:textColor="?attr/colorOnSurface"/>
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp" />
 
         <!-- Vacancy -->
         <TextView
             android:id="@+id/tvVacancy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@color/green_500"
             android:text=""
-            android:textSize="13sp"
             android:textColor="@color/textPrimary"
-            android:background="@color/green_500"/>
+            android:textSize="13sp" />
 
         <!-- Distance -->
         <TextView
@@ -69,8 +68,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="13sp"
-            android:textColor="@color/footerText"/>
+            android:textColor="@color/footerText"
+            android:textSize="13sp" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

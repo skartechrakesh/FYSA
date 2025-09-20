@@ -22,7 +22,8 @@ public class Booking implements Serializable { // ✅ Added Serializable interfa
     private double longitude; // ✅ New field
 
     // Required empty constructor for Firebase deserialization
-    public Booking() {}
+    public Booking() {
+    }
 
     // Full constructor to match all fields
     public Booking(String bookingId, String userId, String ownerId,
@@ -44,30 +45,100 @@ public class Booking implements Serializable { // ✅ Added Serializable interfa
     }
 
     // --- Getters ---
-    public String getBookingId() { return bookingId; }
-    public String getUserId() { return userId; }
-    public String getOwnerId() { return ownerId; }
-    public String getSpaceId() { return spaceId; }
-    public String getSpaceName() { return spaceName; }
-    public String getSpaceType() { return spaceType; }
-    public String getBookingDate() { return bookingDate; }
-    public String getStatus() { return status; }
-    public String getUsername() { return username; }
-    public long getCreatedAt() { return createdAt; }
-    public double getLatitude() { return latitude; } // ✅ Getter
-    public double getLongitude() { return longitude; } // ✅ Getter
+    public String getBookingId() {
+        return bookingId;
+    }
 
     // --- Setters ---
-    public void setBookingId(String bookingId) { this.bookingId = bookingId; }
-    public void setUserId(String userId) { this.userId = userId; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
-    public void setSpaceId(String spaceId) { this.spaceId = spaceId; }
-    public void setSpaceName(String spaceName) { this.spaceName = spaceName; }
-    public void setSpaceType(String spaceType) { this.spaceType = spaceType; }
-    public void setBookingDate(String bookingDate) { this.bookingDate = bookingDate; }
-    public void setStatus(String status) { this.status = status; }
-    public void setUsername(String username) { this.username = username; }
-    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
-    public void setLatitude(double latitude) { this.latitude = latitude; } // ✅ Setter
-    public void setLongitude(double longitude) { this.longitude = longitude; } // ✅ Setter
+    public void setBookingId(String bookingId) {
+        this.bookingId = bookingId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getSpaceId() {
+        return spaceId;
+    }
+
+    public void setSpaceId(String spaceId) {
+        this.spaceId = spaceId;
+    }
+
+    public String getSpaceName() {
+        return spaceName;
+    }
+
+    public void setSpaceName(String spaceName) {
+        this.spaceName = spaceName;
+    }
+
+    public String getSpaceType() {
+        return spaceType;
+    }
+
+    public void setSpaceType(String spaceType) {
+        this.spaceType = spaceType;
+    }
+
+    public String getBookingDate() {
+        return bookingDate;
+    }
+
+    public void setBookingDate(String bookingDate) {
+        this.bookingDate = bookingDate;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    } // ✅ Getter
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    } // ✅ Setter
+
+    public double getLongitude() {
+        return longitude;
+    } // ✅ Getter
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    } // ✅ Setter
 }

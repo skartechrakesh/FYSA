@@ -28,7 +28,9 @@ public class SupportFragment extends Fragment {
         return view;
     }
 
-    /** Launch email app to contact support */
+    /**
+     * Launch email app to contact support
+     */
     private void openEmailSupport() {
         Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
         emailIntent.setData(Uri.parse("mailto:support@skar.com"));

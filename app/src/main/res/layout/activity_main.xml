@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:padding="24dp"
     tools:context=".MainActivity">
 
@@ -16,13 +16,13 @@
         android:layout_marginTop="150dp"
         android:contentDescription="App Logo"
         android:importantForAccessibility="no"
-        android:src="@mipmap/ic_launcher_round"
         android:padding="10dp"
+        android:src="@mipmap/ic_launcher_round"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="ImageContrastCheck"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.ExtraLarge"/>
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.ExtraLarge"
+        tools:ignore="ImageContrastCheck" />
 
     <TextView
         android:id="@+id/appTitle"

@@ -10,7 +10,6 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.app.Activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,17 +29,15 @@ import com.google.firebase.database.ValueEventListener;
 @SuppressWarnings("deprecation")
 public class LoginActivity extends AppCompatActivity {
 
+    // Theme preference keys from RegisterActivity
+    private static final String PREFS_NAME = "theme_preference";
+    private static final String KEY_THEME_MODE = "theme_mode";
     private ImageButton btnThemeToggle;
     private Button btnLoginSubmit;
     private ProgressBar progressBar;
     private TextInputLayout emailLayout, passwordLayout;
-
     private FirebaseAuth auth;
     private DatabaseReference usersRef;
-
-    // Theme preference keys from RegisterActivity
-    private static final String PREFS_NAME = "theme_preference";
-    private static final String KEY_THEME_MODE = "theme_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

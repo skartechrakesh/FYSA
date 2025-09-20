@@ -27,41 +27,45 @@ public class User {
         return username;
     }
 
-    public String getContact() { return contact; }
+    // Setters
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public String getAccountType() {
-        return accountType;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    // Setters
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setContact(String contact) { this.contact = contact; }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public void setEmail(String email) {
         this.email = email;
     }
 
+    public String getAccountType() {
+        return accountType;
+    }
+
     public void setAccountType(String accountType) {
         this.accountType = accountType;
+    }
+
+    public String getUid() {
+        return uid;
     }
 
     public void setUid(String uid) {
