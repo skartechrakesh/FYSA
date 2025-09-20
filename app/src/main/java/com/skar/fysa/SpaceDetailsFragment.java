@@ -32,7 +32,7 @@ public class SpaceDetailsFragment extends Fragment {
 
     private static final String DB_URL =
             "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-    // ✅ ADDED: Variable for the category TextView
+
     private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory;
     private Button btnDirections, btnBook;
     private Space space;
@@ -53,11 +53,11 @@ public class SpaceDetailsFragment extends Fragment {
         tvDistance = view.findViewById(R.id.tvDistance);
         btnDirections = view.findViewById(R.id.btnDirections);
         btnBook = view.findViewById(R.id.btnBook);
-        // ✅ INITIALIZED: The tvCategory variable
         tvCategory = view.findViewById(R.id.tvCategory);
 
         if (getArguments() != null) {
-            space = (Space) getArguments().getSerializable("space");
+            // ✅ Now retrieving Space as Parcelable
+            space = getArguments().getParcelable("space");
             if (space != null) loadSpace();
         }
 
@@ -79,7 +79,6 @@ public class SpaceDetailsFragment extends Fragment {
         tvOwnerName.setText("Owner: " + space.getOwnerName());
         tvAddress.setText("Address: " + space.getAddress());
         tvContact.setText("Contact: " + space.getContact());
-        // ✅ SET TEXT: Set the text for the category
         tvCategory.setText("Category: " + space.getCategory());
 
         Integer distance = space.getDistanceMeters();
@@ -125,7 +124,6 @@ public class SpaceDetailsFragment extends Fragment {
                     .child(spaceId)
                     .child("bookings");
 
-            // Check if user already booked this space
             bookingsRef.orderByChild("userId").equalTo(userId)
                     .addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -169,7 +167,6 @@ public class SpaceDetailsFragment extends Fragment {
             final String usernameFromDb = userSnapshot.child("username").exists()
                     ? userSnapshot.child("username").getValue(String.class)
                     : "User";
-            // ✅ ADDED: Retrieve the contact number from the user snapshot
             final String userContactFromDb = userSnapshot.child("contact").exists()
                     ? userSnapshot.child("contact").getValue(String.class)
                     : "No Contact Provided";
@@ -177,7 +174,6 @@ public class SpaceDetailsFragment extends Fragment {
             BookingsDataModel booking = new BookingsDataModel(
                     userId,
                     usernameFromDb,
-                    // ✅ ADDED: Pass the user's contact number
                     userContactFromDb,
                     spaceId,
                     spaceName,

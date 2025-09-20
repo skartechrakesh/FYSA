@@ -138,7 +138,7 @@ public class ManageSpacesFragment extends Fragment {
         btnEdit.setOnClickListener(v -> {
             EditSpaceFragment editFragment = new EditSpaceFragment();
             Bundle args = new Bundle();
-            args.putSerializable("space", space);
+            args.putParcelable("space", space); // ✅ use Parcelable
             editFragment.setArguments(args);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()

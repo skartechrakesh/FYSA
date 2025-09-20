@@ -1,9 +1,10 @@
 package com.skar.fysa;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
-
-import java.io.Serializable;
 
 /**
  * Model class representing a rental space (Hostel, PG, Room, House, Flat).
@@ -11,7 +12,7 @@ import java.io.Serializable;
  * Each space has a "category" field for filtering.
  */
 @IgnoreExtraProperties
-public class Space implements Serializable {
+public class Space implements Parcelable {
 
     private String id;          // Firebase push key
     private String name;        // Space name
@@ -30,8 +31,7 @@ public class Space implements Serializable {
     private Integer distanceMeters; // Calculated dynamically, not stored in Firebase
 
     // --- Required empty constructor for Firebase ---
-    public Space() {
-    }
+    public Space() {}
 
     // --- Full constructor ---
     public Space(String id, String name, String category,
@@ -52,111 +52,96 @@ public class Space implements Serializable {
         this.vacancy = vacancy != null ? vacancy : true;
     }
 
-    // --- Getters ---
-    public String getId() {
-        return id;
+    // --- Parcelable implementation ---
+    protected Space(Parcel in) {
+        id = in.readString();
+        name = in.readString();
+        category = in.readString();
+        latitude = in.readDouble();
+        longitude = in.readDouble();
+        ownerId = in.readString();
+        ownerName = in.readString();
+        address = in.readString();
+        contact = in.readString();
+        email = in.readString();
+        description = in.readString();
+        byte tmpVacancy = in.readByte();
+        vacancy = tmpVacancy == 0 ? null : tmpVacancy == 1;
+        if (in.readByte() == 1) {
+            distanceMeters = in.readInt();
+        }
     }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
+        dest.writeString(name);
+        dest.writeString(category);
+        dest.writeDouble(latitude);
+        dest.writeDouble(longitude);
+        dest.writeString(ownerId);
+        dest.writeString(ownerName);
+        dest.writeString(address);
+        dest.writeString(contact);
+        dest.writeString(email);
+        dest.writeString(description);
+        dest.writeByte((byte) (vacancy == null ? 0 : vacancy ? 1 : 2));
+        if (distanceMeters != null) {
+            dest.writeByte((byte) 1);
+            dest.writeInt(distanceMeters);
+        } else {
+            dest.writeByte((byte) 0);
+        }
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Space> CREATOR = new Creator<Space>() {
+        @Override
+        public Space createFromParcel(Parcel in) {
+            return new Space(in);
+        }
+
+        @Override
+        public Space[] newArray(int size) {
+            return new Space[size];
+        }
+    };
+
+    // --- Getters ---
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getCategory() { return category; }
+    public double getLatitude() { return latitude; }
+    public double getLongitude() { return longitude; }
+    public String getOwnerId() { return ownerId; }
+    public String getOwnerName() { return ownerName; }
+    public String getAddress() { return address; }
+    public String getContact() { return contact; }
+    public String getEmail() { return email; }
+    public String getDescription() { return description; }
+    public Boolean isVacancy() { return vacancy; }
+
+    @Exclude
+    public Integer getDistanceMeters() { return distanceMeters; }
 
     // --- Setters ---
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
-    }
-
-    public String getOwnerName() {
-        return ownerName;
-    }
-
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Boolean isVacancy() {
-        return vacancy;
-    }
+    public void setId(String id) { this.id = id; }
+    public void setName(String name) { this.name = name; }
+    public void setCategory(String category) { this.category = category; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
+    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
+    public void setAddress(String address) { this.address = address; }
+    public void setContact(String contact) { this.contact = contact; }
+    public void setEmail(String email) { this.email = email; }
+    public void setDescription(String description) { this.description = description; }
+    public void setVacancy(Boolean vacancy) { this.vacancy = vacancy != null ? vacancy : true; }
 
     @Exclude
-    public Integer getDistanceMeters() {
-        return distanceMeters;
-    }
-
-    @Exclude
-    public void setDistanceMeters(Integer distanceMeters) {
-        this.distanceMeters = distanceMeters;
-    }
-
-    public void setVacancy(Boolean vacancy) {
-        this.vacancy = vacancy != null ? vacancy : true;
-    }
+    public void setDistanceMeters(Integer distanceMeters) { this.distanceMeters = distanceMeters; }
 }

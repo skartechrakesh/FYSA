@@ -120,7 +120,8 @@ public class EditSpaceFragment extends Fragment {
         currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
         globalSpacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
 
-        space = (Space) getArguments().getSerializable("space");
+        // ✅ Use Parcelable instead of Serializable
+        space = getArguments().getParcelable("space");
         if (space == null) {
             Snackbar.make(view, "Error: No space data received", Snackbar.LENGTH_LONG).show();
             return view;
@@ -310,11 +311,12 @@ public class EditSpaceFragment extends Fragment {
                         space.setCategory(category);
                         space.setVacancy(vacancyText.equals("Yes"));
 
-                        // ✅ Call the new method to update bookings
+                        // ✅ Update bookings linked to this space
                         updateBookingsForSpace(space.getId(), space);
 
                         Bundle result = new Bundle();
-                        result.putSerializable("space", space);
+                        // ✅ Use Parcelable instead of Serializable
+                        result.putParcelable("space", space);
                         getParentFragmentManager().setFragmentResult("edit_space_result", result);
 
                         if (onSpaceUpdatedListener != null) {
@@ -330,7 +332,7 @@ public class EditSpaceFragment extends Fragment {
                 });
     }
 
-    // ✅ New method to update bookings
+    // ✅ Update bookings with new space details
     private void updateBookingsForSpace(String spaceId, Space updatedSpace) {
         DatabaseReference bookingsRef = globalSpacesRef.child(spaceId).child("bookings");
 
@@ -347,7 +349,6 @@ public class EditSpaceFragment extends Fragment {
 
                         bookingSnap.getRef().updateChildren(bookingUpdates)
                                 .addOnFailureListener(e -> {
-                                    // Log or handle the error for individual booking updates
                                     Log.e("EditSpaceFragment", "Failed to update booking: " + e.getMessage());
                                 });
                     }
@@ -356,7 +357,6 @@ public class EditSpaceFragment extends Fragment {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                // Log or handle the error
                 Log.e("EditSpaceFragment", "Failed to read bookings for update: " + error.getMessage());
             }
         });

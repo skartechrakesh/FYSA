@@ -1,12 +1,13 @@
 package com.skar.fysa;
 
-import java.io.Serializable;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 /**
  * Model class representing a booking.
  * Stored in Firebase under: bookings_by_users/<userId>/<bookingId>
  */
-public class Booking implements Serializable { // ✅ Added Serializable interface
+public class Booking implements Parcelable {
 
     private String bookingId;
     private String userId;
@@ -18,8 +19,8 @@ public class Booking implements Serializable { // ✅ Added Serializable interfa
     private String status;
     private String username;
     private long createdAt;
-    private double latitude; // ✅ New field
-    private double longitude; // ✅ New field
+    private double latitude;   // ✅ New field
+    private double longitude;  // ✅ New field
 
     // Required empty constructor for Firebase deserialization
     public Booking() {
@@ -44,12 +45,60 @@ public class Booking implements Serializable { // ✅ Added Serializable interfa
         this.longitude = longitude;
     }
 
-    // --- Getters ---
+    // --- Parcelable implementation ---
+    protected Booking(Parcel in) {
+        bookingId = in.readString();
+        userId = in.readString();
+        ownerId = in.readString();
+        spaceId = in.readString();
+        spaceName = in.readString();
+        spaceType = in.readString();
+        bookingDate = in.readString();
+        status = in.readString();
+        username = in.readString();
+        createdAt = in.readLong();
+        latitude = in.readDouble();
+        longitude = in.readDouble();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(bookingId);
+        dest.writeString(userId);
+        dest.writeString(ownerId);
+        dest.writeString(spaceId);
+        dest.writeString(spaceName);
+        dest.writeString(spaceType);
+        dest.writeString(bookingDate);
+        dest.writeString(status);
+        dest.writeString(username);
+        dest.writeLong(createdAt);
+        dest.writeDouble(latitude);
+        dest.writeDouble(longitude);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Booking> CREATOR = new Creator<Booking>() {
+        @Override
+        public Booking createFromParcel(Parcel in) {
+            return new Booking(in);
+        }
+
+        @Override
+        public Booking[] newArray(int size) {
+            return new Booking[size];
+        }
+    };
+
+    // --- Getters and Setters ---
     public String getBookingId() {
         return bookingId;
     }
 
-    // --- Setters ---
     public void setBookingId(String bookingId) {
         this.bookingId = bookingId;
     }
@@ -128,17 +177,17 @@ public class Booking implements Serializable { // ✅ Added Serializable interfa
 
     public double getLatitude() {
         return latitude;
-    } // ✅ Getter
+    }
 
     public void setLatitude(double latitude) {
         this.latitude = latitude;
-    } // ✅ Setter
+    }
 
     public double getLongitude() {
         return longitude;
-    } // ✅ Getter
+    }
 
     public void setLongitude(double longitude) {
         this.longitude = longitude;
-    } // ✅ Setter
+    }
 }

@@ -1,6 +1,7 @@
 package com.skar.fysa;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -38,7 +39,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -49,6 +49,7 @@ public class FindYourSpaceFragment extends Fragment {
     private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test
     private final List<Space> spaceList = new ArrayList<>();
     private final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
     private RecyclerView recyclerView;
     private SpacesAdapter adapter;
     private Location userLocation;
@@ -59,15 +60,11 @@ public class FindYourSpaceFragment extends Fragment {
     private String selectedCategory = null;
     private FusedLocationProviderClient fusedLocationClient;
 
+    // Pagination placeholders
     private String lastKey = null;
     private boolean isLoading = false;
 
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString("selectedCategory", selectedCategory);
-        outState.putSerializable("spaceList", new ArrayList<>(spaceList));
-    }    private final ActivityResultLauncher<String[]> permissionLauncher =
+    private final ActivityResultLauncher<String[]> permissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
                 Boolean fine = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
                 Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
@@ -78,6 +75,13 @@ public class FindYourSpaceFragment extends Fragment {
                     Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
                 }
             });
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("selectedCategory", selectedCategory);
+        outState.putParcelableArrayList("spaceList", new ArrayList<>(spaceList)); // ✅ Parcelable
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -99,7 +103,7 @@ public class FindYourSpaceFragment extends Fragment {
         adapter = new SpacesAdapter(spaceList, space -> {
             SpaceDetailsFragment fragment = new SpaceDetailsFragment();
             Bundle args = new Bundle();
-            args.putSerializable("space", space);
+            args.putParcelable("space", space); // ✅ Parcelable
             fragment.setArguments(args);
 
             requireActivity().getSupportFragmentManager()
@@ -139,7 +143,7 @@ public class FindYourSpaceFragment extends Fragment {
 
         if (savedInstanceState != null) {
             selectedCategory = savedInstanceState.getString("selectedCategory");
-            List<Space> savedSpaces = (List<Space>) savedInstanceState.getSerializable("spaceList");
+            ArrayList<Space> savedSpaces = savedInstanceState.getParcelableArrayList("spaceList"); // ✅ Parcelable
             if (savedSpaces != null) {
                 spaceList.clear();
                 spaceList.addAll(savedSpaces);
@@ -169,7 +173,6 @@ public class FindYourSpaceFragment extends Fragment {
         }
     }
 
-    // ✅ Always fetch fresh location before loading spaces
     private void fetchUserLocationAndThenSpaces() {
         if (ActivityCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
@@ -220,13 +223,11 @@ public class FindYourSpaceFragment extends Fragment {
                         space.setId(spaceSnap.getKey());
                     }
 
-                    // ✅ Filter by category
                     if (selectedCategory != null &&
                             !selectedCategory.equalsIgnoreCase(space.getCategory())) {
                         continue;
                     }
 
-                    // ✅ Calculate distance from current userLocation
                     if (userLocation != null) {
                         float[] results = new float[1];
                         Location.distanceBetween(
@@ -249,7 +250,7 @@ public class FindYourSpaceFragment extends Fragment {
                 }
 
                 // Sort by distance
-                Collections.sort(spaceList, Comparator.comparingInt(s ->
+                spaceList.sort(Comparator.comparingInt(s ->
                         (s.getDistanceMeters() != null && s.getDistanceMeters() >= 0)
                                 ? s.getDistanceMeters()
                                 : Integer.MAX_VALUE));
@@ -320,6 +321,7 @@ public class FindYourSpaceFragment extends Fragment {
             this.onSpaceClick = onSpaceClick;
         }
 
+        @SuppressLint("NotifyDataSetChanged")
         public void submitList(List<Space> newItems) {
             items.clear();
             if (newItems != null) items.addAll(newItems);
@@ -362,6 +364,7 @@ public class FindYourSpaceFragment extends Fragment {
                 tvVacancy = itemView.findViewById(R.id.tvVacancy);
             }
 
+            @SuppressLint("SetTextI18n")
             void bind(Space space, OnSpaceClick listener) {
                 tvName.setText(space.getName());
                 tvCategory.setText(space.getCategory());
@@ -383,6 +386,4 @@ public class FindYourSpaceFragment extends Fragment {
             }
         }
     }
-
-
 }
