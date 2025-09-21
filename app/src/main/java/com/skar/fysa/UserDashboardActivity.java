@@ -25,13 +25,12 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class UserDashboardActivity extends AppCompatActivity {
 
     private static final String KEY_USERNAME = "username";
-    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
 
@@ -89,38 +88,36 @@ public class UserDashboardActivity extends AppCompatActivity {
 
     private void setupDrawerActions() {
         navigationView.setNavigationItemSelectedListener(item -> {
+            Fragment fragment = null;
             int itemId = item.getItemId();
 
-            // Close the drawer immediately for any selection
-            drawerLayout.closeDrawer(GravityCompat.START);
-
             if (itemId == R.id.nav_find_space) {
-                Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
-                if (currentFragment instanceof FindYourSpaceFragment) {
-                    return true;
-                }
-                replaceFragment(new FindYourSpaceFragment());
+                fragment = new FindYourSpaceFragment();
                 bottomNavigationView.setSelectedItemId(R.id.nav_find_space);
             } else if (itemId == R.id.nav_my_bookings) {
-                replaceFragment(new MyBookingsFragment());
+                fragment = new MyBookingsFragment();
+                replaceFragment(fragment);
                 bottomNavigationView.setSelectedItemId(R.id.nav_my_bookings);
-            } else if (itemId == R.id.nav_settings) {
-                replaceFragment(new SettingsFragment());
-                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
             } else if (itemId == R.id.nav_faq) {
-                // ✅ CHANGE: This logic specifically handles the FAQ's screen
-                // It replaces the current fragment without adding to the back stack
-                getSupportFragmentManager().popBackStack(); // Clear any existing fragments
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragmentContainer, new FaqFragment())
-                        .addToBackStack("faq_tag") // ✅ ADDED: Add a unique tag to the back stack
-                        .commit();
+                fragment = new FaqFragment();
+                openFragment(fragment);
+                drawerLayout.closeDrawer(GravityCompat.START);
+                return true;
+            } else if (itemId == R.id.nav_settings2) {
+                fragment = new SettingsFragment();
+                replaceFragment(fragment);
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings1);
+                drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             } else if (itemId == R.id.nav_logout) {
                 showLogoutSnackbar();
                 return true;
             }
 
+            if (fragment != null && itemId != R.id.nav_faq && itemId != R.id.nav_settings1) {
+                replaceFragment(fragment);
+            }
+            drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
     }
@@ -135,7 +132,7 @@ public class UserDashboardActivity extends AppCompatActivity {
                 fragment = new FindYourSpaceFragment();
             } else if (item.getItemId() == R.id.nav_my_bookings) {
                 fragment = new MyBookingsFragment();
-            } else if (item.getItemId() == R.id.nav_settings) {
+            } else if (item.getItemId() == R.id.nav_settings1) {
                 fragment = new SettingsFragment();
             }
 
@@ -187,22 +184,27 @@ public class UserDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL).getReference("users").child(user.getUid());
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-        userRef.child("name").get().addOnCompleteListener(task -> {
-            String displayName = "User";
-            if (task.isSuccessful() && task.getResult().exists()) {
-                String nameFromDb = task.getResult().getValue(String.class);
-                if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
-                getSharedPreferences("theme_prefs", MODE_PRIVATE)
-                        .edit()
-                        .putString(KEY_USERNAME, displayName)
-                        .apply();
-            } else {
-                displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE).getString(KEY_USERNAME, "User");
-            }
-            drawerUserName.setText("Welcome, " + displayName);
-        });
+        firestore.collection("users").document(user.getUid()).get()
+                .addOnCompleteListener(task -> {
+                    String displayName = "User";
+
+                    if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                        DocumentSnapshot snapshot = task.getResult();
+                        String nameFromDb = snapshot.getString("name");
+                        if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
+
+                        getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                                .edit()
+                                .putString(KEY_USERNAME, displayName)
+                                .apply();
+                    } else {
+                        displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                                .getString(KEY_USERNAME, "User");
+                    }
+                    drawerUserName.setText("Welcome, " + displayName);
+                });
     }
 
     private void setupBackPressHandler() {
@@ -237,7 +239,6 @@ public class UserDashboardActivity extends AppCompatActivity {
             }
         });
     }
-
 
     private void toggleTheme(Context context) {
         int nightMode = AppCompatDelegate.getDefaultNightMode();

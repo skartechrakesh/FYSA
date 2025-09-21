@@ -9,6 +9,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
@@ -19,20 +20,23 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class OwnerDashboardActivity extends AppCompatActivity {
 
     private static final String KEY_USERNAME = "username";
-    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
+
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
@@ -107,10 +111,10 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 openFragment(fragment);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
-            } else if (itemId == R.id.nav_settings) {
+            } else if (itemId == R.id.nav_settings2) {
                 fragment = new SettingsFragment();
                 replaceFragment(fragment);
-                bottomNavigationView.setSelectedItemId(R.id.nav_preferences);
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings1);
                 drawerLayout.closeDrawer(GravityCompat.START);
                 return true;
             } else if (itemId == R.id.nav_logout) {
@@ -118,7 +122,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 return true;
             }
 
-            if (fragment != null && itemId != R.id.nav_faq && itemId != R.id.nav_preferences) {
+            if (fragment != null && itemId != R.id.nav_faq && itemId != R.id.nav_settings1) {
                 replaceFragment(fragment);
             }
 
@@ -137,7 +141,7 @@ public class OwnerDashboardActivity extends AppCompatActivity {
                 fragment = new AddNewSpaceFragment();
             } else if (item.getItemId() == R.id.nav_bookings) {
                 fragment = new BookingsOverviewFragment();
-            } else if (item.getItemId() == R.id.nav_preferences) {
+            } else if (item.getItemId() == R.id.nav_settings1) {
                 fragment = new SettingsFragment();
             }
 
@@ -188,24 +192,27 @@ public class OwnerDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL).getReference("users").child(user.getUid());
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-        userRef.child("name").get().addOnCompleteListener(task -> {
-            String displayName = "User";
+        firestore.collection("users").document(user.getUid()).get()
+                .addOnCompleteListener(task -> {
+                    String displayName = "User";
 
-            if (task.isSuccessful() && task.getResult().exists()) {
-                String nameFromDb = task.getResult().getValue(String.class);
-                if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
+                    if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                        DocumentSnapshot snapshot = task.getResult();
+                        String nameFromDb = snapshot.getString("name");
+                        if (nameFromDb != null && !nameFromDb.isEmpty()) displayName = nameFromDb;
 
-                getSharedPreferences("theme_prefs", MODE_PRIVATE)
-                        .edit()
-                        .putString(KEY_USERNAME, displayName)
-                        .apply();
-            } else {
-                displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE).getString(KEY_USERNAME, "User");
-            }
-            drawerUserName.setText("Welcome, " + displayName);
-        });
+                        getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                                .edit()
+                                .putString(KEY_USERNAME, displayName)
+                                .apply();
+                    } else {
+                        displayName = getSharedPreferences("theme_prefs", MODE_PRIVATE)
+                                .getString(KEY_USERNAME, "User");
+                    }
+                    drawerUserName.setText("Welcome, " + displayName);
+                });
     }
 
     private void setupBackPressHandler() {

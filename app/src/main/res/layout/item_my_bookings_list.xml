@@ -15,11 +15,24 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
+    <!-- Booking Address (newly added) -->
+    <TextView
+        android:id="@+id/tvBookingAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Address"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="13sp"
+        android:ellipsize="end"
+        android:singleLine="true" />
+
     <!-- Booking Type / Space Type -->
     <TextView
         android:id="@+id/tvBookingType"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:textColor="?attr/colorOnSurface" />
 
     <!-- Booking Date -->
@@ -27,6 +40,7 @@
         android:id="@+id/tvBookingDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:textColor="?attr/colorOnSurface" />
 
     <!-- Booking Status -->
@@ -34,6 +48,7 @@
         android:id="@+id/tvBookingStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:textColor="?attr/colorSuccess" />
 
     <LinearLayout
@@ -55,7 +70,7 @@
             android:text="@string/cancel_visit"
             android:textColor="@color/textPrimary" />
 
-        <!-- Cancel Visit Button -->
+        <!-- Directions Button -->
         <Button
             android:id="@+id/btnDirections"
             style="?android:attr/buttonBarButtonStyle"

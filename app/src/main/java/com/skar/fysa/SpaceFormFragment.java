@@ -34,23 +34,23 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class SpaceFormFragment extends Fragment {
 
     private final Handler adHandler = new Handler();
-    // 🔹 UI Components
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
     private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
     private Button btnSubmit;
@@ -58,18 +58,16 @@ public class SpaceFormFragment extends Fragment {
     private FloatingActionButton btnMyLocation;
     private MapView mapView;
     private View fragmentView;
-    // 🔹 Location Permission Launcher
+
+    private FirebaseFirestore firestore;
+    private String category;
+    private InterstitialAd mInterstitialAd;
+
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) moveToCurrentLocation();
-                else
-                    Snackbar.make(fragmentView, "Location permission denied", Snackbar.LENGTH_SHORT).show();
+                else Snackbar.make(fragmentView, "Location permission denied", Snackbar.LENGTH_SHORT).show();
             });
-    // 🔹 Firebase
-    private DatabaseReference globalSpacesRef;
-    private String category;
-    // 🔹 Ads
-    private InterstitialAd mInterstitialAd;
 
     private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
         if (context == null || inputs == null) return;
@@ -92,9 +90,6 @@ public class SpaceFormFragment extends Fragment {
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Lifecycle
-    // ---------------------------------------------------------------------------------------------
     @SuppressLint("SetTextI18n")
     @Nullable
     @Override
@@ -104,36 +99,27 @@ public class SpaceFormFragment extends Fragment {
 
         fragmentView = inflater.inflate(R.layout.fragment_space_form, container, false);
 
-        // Setup OSMDroid
         Configuration.getInstance().load(requireContext(),
                 requireContext().getSharedPreferences("osmdroid_prefs", 0));
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
 
-        // Get category
         category = getArguments() != null ? getArguments().getString("CATEGORY", "Unknown") : "Unknown";
 
-        // Firebase reference
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             Snackbar.make(fragmentView, "You must be logged in", Snackbar.LENGTH_SHORT).show();
             return fragmentView;
         }
-        FirebaseDatabase db = FirebaseDatabase.getInstance(
-                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        );
-        globalSpacesRef = db.getReference("spaces");
+        firestore = FirebaseFirestore.getInstance();
 
-        // Init UI
         bindViews(fragmentView);
         setListeners();
         setupBackHandling();
         initMap();
         requestLocationPermission();
 
-        // UI updates
         txtCategory.setText("Category: " + category);
         setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
 
-        // Load Ads & User Data
         loadInterstitialAd();
         loadDefaultUserData();
 
@@ -152,9 +138,6 @@ public class SpaceFormFragment extends Fragment {
         mapView.onPause();
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // View Binding & Styling
-    // ---------------------------------------------------------------------------------------------
     private void bindViews(View view) {
         inputName = view.findViewById(R.id.inputName);
         inputOwnerName = view.findViewById(R.id.inputOwnerName);
@@ -172,14 +155,9 @@ public class SpaceFormFragment extends Fragment {
         mapView = view.findViewById(R.id.mapView);
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Listeners
-    // ---------------------------------------------------------------------------------------------
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
-
-        // ✅ Updated click listener to perform validation before showing the ad
         btnSubmit.setOnClickListener(v -> submitForm());
 
         mapView.setOnTouchListener((v, event) -> {
@@ -207,9 +185,6 @@ public class SpaceFormFragment extends Fragment {
                 });
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Map & Location
-    // ---------------------------------------------------------------------------------------------
     private void initMap() {
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
@@ -230,7 +205,6 @@ public class SpaceFormFragment extends Fragment {
         LocationManager lm = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         try {
             Location last = null;
-
             if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             }
@@ -244,15 +218,11 @@ public class SpaceFormFragment extends Fragment {
             } else {
                 Snackbar.make(fragmentView, "Enable GPS to fetch location.", Snackbar.LENGTH_LONG).show();
             }
-
         } catch (Exception e) {
             Snackbar.make(fragmentView, "Failed to fetch location: " + e.getMessage(), Snackbar.LENGTH_SHORT).show();
         }
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Form Handling
-    // ---------------------------------------------------------------------------------------------
     private void submitForm() {
         String name = Objects.requireNonNull(inputName.getText()).toString().trim();
         String ownerName = Objects.requireNonNull(inputOwnerName.getText()).toString().trim();
@@ -270,29 +240,30 @@ public class SpaceFormFragment extends Fragment {
             return;
         }
 
-        // Check for existing space name before attempting to save
         checkForExistingSpace(name, ownerName, contact, address, center);
     }
 
     private void checkForExistingSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
-        globalSpacesRef.orderByChild("name").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    Snackbar.make(fragmentView, "Space name already exists. Please use a different name.", Snackbar.LENGTH_LONG).show();
-                } else {
-                    // ✅ If no duplicate is found, show the ad and then save the space
-                    showAdAndSaveSpace(name, ownerName, contact, address, center);
-                }
-            }
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Snackbar.make(fragmentView, "Error checking for space name. Saving anyway.", Snackbar.LENGTH_LONG).show();
-                // ✅ If the check fails, still proceed to save
-                showAdAndSaveSpace(name, ownerName, contact, address, center);
-            }
-        });
+        String uid = user.getUid();
+
+        firestore.collection("spaces")
+                .whereEqualTo("ownerId", uid)   // only current user's spaces
+                .whereEqualTo("name", name)     // check for same name
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        Snackbar.make(fragmentView, "Space name already exists for your account.", Snackbar.LENGTH_LONG).show();
+                    } else {
+                        showAdAndSaveSpace(name, ownerName, contact, address, center);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Snackbar.make(fragmentView, "Failed to check space name. Saving anyway.", Snackbar.LENGTH_SHORT).show();
+                    showAdAndSaveSpace(name, ownerName, contact, address, center);
+                });
     }
 
     private void showAdAndSaveSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
@@ -318,53 +289,46 @@ public class SpaceFormFragment extends Fragment {
     }
 
     private void saveNewSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
-        String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
 
-        String spaceId = globalSpacesRef.push().getKey();
-        if (spaceId == null) {
-            Snackbar.make(fragmentView, "Failed to create ID", Snackbar.LENGTH_SHORT).show();
-            return;
-        }
+        String uid = user.getUid();
+        String email = user.getEmail();
+        String spaceId = firestore.collection("spaces").document().getId();
 
-        Space space = new Space(
-                spaceId, name, category, center.getLatitude(), center.getLongitude(),
-                uid, ownerName, address, contact, email, true
-        );
+        Map<String, Object> space = new HashMap<>();
+        space.put("spaceId", spaceId);
+        space.put("name", name);
+        space.put("category", category);
+        space.put("latitude", center.getLatitude());
+        space.put("longitude", center.getLongitude());
+        space.put("ownerId", uid);
+        space.put("ownerName", ownerName);
+        space.put("address", address);
+        space.put("contact", contact);
+        space.put("email", email);
+        space.put("active", true);
 
-        globalSpacesRef.child(spaceId).setValue(space).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-
-                DatabaseReference userRef = FirebaseDatabase.getInstance(
-                                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                        .getReference("users")
-                        .child(uid);
-
-                userRef.child("space_reference").child(spaceId).setValue(true)
-                        .addOnCompleteListener(refTask -> {
-                            if (refTask.isSuccessful()) {
+        firestore.collection("spaces").document(spaceId).set(space)
+                .addOnSuccessListener(unused -> {
+                    firestore.collection("users").document(uid)
+                            .update("space_reference." + spaceId, true)
+                            .addOnSuccessListener(unused1 -> {
                                 Snackbar.make(fragmentView, category + " saved successfully!", Snackbar.LENGTH_SHORT).show();
                                 getParentFragmentManager().popBackStack();
-                            } else {
-                                Snackbar.make(fragmentView, "Failed to add space reference: " +
-                                                Objects.requireNonNull(refTask.getException()).getMessage(),
-                                        Snackbar.LENGTH_LONG).show();
-                            }
-                        });
-
-            } else {
-                Snackbar.make(fragmentView, "Save failed: " +
-                        Objects.requireNonNull(task.getException()).getMessage(), Snackbar.LENGTH_LONG).show();
-            }
-        });
+                            })
+                            .addOnFailureListener(e -> Snackbar.make(fragmentView,
+                                    "Failed to add space reference: " + e.getMessage(),
+                                    Snackbar.LENGTH_LONG).show());
+                })
+                .addOnFailureListener(e -> Snackbar.make(fragmentView,
+                        "Save failed: " + e.getMessage(),
+                        Snackbar.LENGTH_LONG).show());
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Firebase & Ads
-    // ---------------------------------------------------------------------------------------------
     private void loadInterstitialAd() {
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712", // TODO: Replace with your Ad Unit ID
+                "ca-app-pub-3940256099942544/1033173712",
                 new AdRequest.Builder().build(),
                 new InterstitialAdLoadCallback() {
                     @Override
@@ -380,27 +344,21 @@ public class SpaceFormFragment extends Fragment {
     }
 
     private void loadDefaultUserData() {
-        String uid = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        DatabaseReference userRef = FirebaseDatabase.getInstance(
-                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        ).getReference("users").child(uid);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
 
-        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
-
-                String name = snapshot.child("name").getValue(String.class);
-                String contact = snapshot.child("contact").getValue(String.class);
-
-                if (name != null) inputOwnerName.setText(name);
-                if (contact != null) inputContact.setText(contact);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Snackbar.make(fragmentView, "Failed to load user data: " + error.getMessage(), Snackbar.LENGTH_SHORT).show();
-            }
-        });
+        firestore.collection("users").document(user.getUid())
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        String name = snapshot.getString("name");
+                        String contact = snapshot.getString("contact");
+                        if (name != null) inputOwnerName.setText(name);
+                        if (contact != null) inputContact.setText(contact);
+                    }
+                })
+                .addOnFailureListener(e -> Snackbar.make(fragmentView,
+                        "Failed to load user data: " + e.getMessage(),
+                        Snackbar.LENGTH_SHORT).show());
     }
 }

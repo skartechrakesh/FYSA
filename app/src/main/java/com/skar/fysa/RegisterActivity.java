@@ -22,20 +22,18 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    private static final String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
 
@@ -45,6 +43,7 @@ public class RegisterActivity extends AppCompatActivity {
     private TextInputLayout nameLayout, usernameLayout, contactLayout, emailLayout, passwordLayout, confirmPasswordLayout;
     private TextInputEditText passwordEdit, confirmPasswordEdit;
     private FirebaseAuth auth;
+    private FirebaseFirestore firestore;
 
     public static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
         if (context == null || inputs == null) return;
@@ -67,15 +66,13 @@ public class RegisterActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Load the saved theme before calling super.onCreate()
+        // Load saved theme
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         int savedTheme = sharedPreferences.getInt(KEY_THEME_MODE, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         AppCompatDelegate.setDefaultNightMode(savedTheme);
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
-
-        FirebaseApp.initializeApp(this);
 
         ImageButton btnTheme = findViewById(R.id.btnThemeToggle);
         btnRegisterSubmit = findViewById(R.id.btnRegisterSubmit);
@@ -94,6 +91,7 @@ public class RegisterActivity extends AppCompatActivity {
         confirmPasswordEdit = (TextInputEditText) confirmPasswordLayout.getEditText();
 
         auth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
 
         setupTextInputStrokes(this, nameLayout, usernameLayout, contactLayout, emailLayout, passwordLayout, confirmPasswordLayout);
         btnTheme.setOnClickListener(v -> changeTheme());
@@ -109,15 +107,10 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void changeTheme() {
         int nightMode = AppCompatDelegate.getDefaultNightMode();
-        int newNightMode;
-        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) {
-            newNightMode = AppCompatDelegate.MODE_NIGHT_NO;
-        } else {
-            newNightMode = AppCompatDelegate.MODE_NIGHT_YES;
-        }
+        int newNightMode = (nightMode == AppCompatDelegate.MODE_NIGHT_YES) ?
+                AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES;
 
-        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
         editor.putInt(KEY_THEME_MODE, newNightMode);
         editor.apply();
 
@@ -128,16 +121,9 @@ public class RegisterActivity extends AppCompatActivity {
     private void setupPasswordValidation() {
         if (passwordEdit != null) {
             passwordEdit.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
                     if (isPasswordWeak(s.toString()))
                         passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
                     else passwordLayout.setError(null);
@@ -146,16 +132,9 @@ public class RegisterActivity extends AppCompatActivity {
         }
         if (confirmPasswordEdit != null) {
             confirmPasswordEdit.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
                     String pwd = passwordEdit != null ? Objects.requireNonNull(passwordEdit.getText()).toString() : "";
                     if (!s.toString().equals(pwd))
                         confirmPasswordLayout.setError("Passwords do not match");
@@ -182,108 +161,92 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        String accountType;
-        if (toggleAccountType.getCheckedButtonId() == R.id.btnOwner) {
-            accountType = "owner";
-        } else {
-            accountType = "user";
-        }
+        String accountType = (toggleAccountType.getCheckedButtonId() == R.id.btnOwner) ? "owner" : "user";
 
         if (contact.isEmpty()) {
             showSnackbar("Please enter contact number");
             return;
         }
-
         if (!contact.matches("^\\+?[0-9]{7,10}$")) {
             contactLayout.setError("Invalid contact number");
             return;
-        } else {
-            contactLayout.setError(null);
-        }
+        } else contactLayout.setError(null);
 
         if (name.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
             showSnackbar("Please fill all fields");
             return;
         }
-
         if (!isValidUsername(username)) {
             usernameLayout.setError("Invalid username: min 5 chars, lowercase & numbers only");
             return;
-        } else {
-            usernameLayout.setError(null);
-        }
+        } else usernameLayout.setError(null);
 
         if (isPasswordWeak(password)) {
             passwordLayout.setError("Weak password: Min 8 chars, 1 lowercase, 1 number, 1 symbol");
             return;
-        } else {
-            passwordLayout.setError(null);
-        }
+        } else passwordLayout.setError(null);
 
         if (!password.equals(confirmPassword)) {
             confirmPasswordLayout.setError("Passwords do not match");
             return;
-        } else {
-            confirmPasswordLayout.setError(null);
-        }
+        } else confirmPasswordLayout.setError(null);
 
         setLoading(true);
 
-        DatabaseReference usernameRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL)
-                .getReference("usernames").child(username);
-
-        usernameRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    setLoading(false);
-                    usernameLayout.setError("Username already exists");
-                    showSnackbar("Username already exists");
-                    return;
-                }
-
-                auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && auth.getCurrentUser() != null) {
-                        FirebaseUser firebaseUser = auth.getCurrentUser();
-                        usernameRef.setValue(firebaseUser.getUid(), (error, ref) -> {
-                            if (error != null) {
-                                firebaseUser.delete();
-                                setLoading(false);
-                                showSnackbar("Registration failed. Please try again.");
-                            } else {
-                                saveUserData(firebaseUser.getUid(), username, contact, email, name, accountType);
-                            }
-                        });
-                    } else {
-                        setLoading(false);
-                        showSnackbar("Registration failed: " +
-                                (task.getException() != null ? task.getException().getMessage() : ""));
-                    }
-                });
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+        // Check username availability in Firestore
+        DocumentReference usernameRef = firestore.collection("usernames").document(username);
+        usernameRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                 setLoading(false);
-                showSnackbar("Database error: " + error.getMessage());
+                usernameLayout.setError("Username already exists");
+                showSnackbar("Username already exists");
+            } else {
+                createFirebaseUser(email, password, username, contact, name, accountType);
             }
         });
     }
 
-    private void saveUserData(String uid, String username, String contact, String email, String name, String accountType) {
-        DatabaseReference dbRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference();
+    private void createFirebaseUser(String email, String password, String username,
+                                    String contact, String name, String accountType) {
+        auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
+            if (task.isSuccessful() && auth.getCurrentUser() != null) {
+                FirebaseUser firebaseUser = auth.getCurrentUser();
+                saveUserDataToFirestore(firebaseUser.getUid(), username, contact, email, name, accountType);
+            } else {
+                setLoading(false);
+                showSnackbar("Registration failed: " + (task.getException() != null ? task.getException().getMessage() : ""));
+            }
+        });
+    }
 
-        dbRef.child("users").child(uid).setValue(new User(username, contact, name, email, accountType, uid))
-                .addOnCompleteListener(task -> {
+    private void saveUserDataToFirestore(String uid, String username, String contact,
+                                         String email, String name, String accountType) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("username", username);
+        userMap.put("contact", contact);
+        userMap.put("name", name);
+        userMap.put("email", email);
+        userMap.put("accountType", accountType);
+        userMap.put("uid", uid);
+
+        firestore.collection("users").document(uid)
+                .set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    firestore.collection("usernames").document(username)
+                            .set(Collections.singletonMap("uid", uid))
+                            .addOnSuccessListener(aVoid2 -> {
+                                setLoading(false);
+                                showSnackbar("Registration successful!");
+                                redirectUser(accountType);
+                            })
+                            .addOnFailureListener(e -> {
+                                setLoading(false);
+                                showSnackbar("Failed to save username reference: " + e.getMessage());
+                            });
+                })
+                .addOnFailureListener(e -> {
                     setLoading(false);
-                    if (task.isSuccessful()) {
-                        showSnackbar("Registration successful!");
-                        redirectUser(accountType);
-                        finish();
-                    } else {
-                        showSnackbar("Failed to save profile info: " +
-                                (task.getException() != null ? task.getException().getMessage() : ""));
-                    }
+                    showSnackbar("Failed to save user data: " + e.getMessage());
                 });
     }
 

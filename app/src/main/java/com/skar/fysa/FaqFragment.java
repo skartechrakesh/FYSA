@@ -14,18 +14,16 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class FaqFragment extends Fragment {
 
-    private static final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private LinearLayout faqContainer;
     private String accountType = "user"; // default
     private View rootView;
+
+    private FirebaseFirestore firestore;
 
     @Nullable
     @Override
@@ -40,6 +38,7 @@ public class FaqFragment extends Fragment {
 
         rootView = view;
         faqContainer = view.findViewById(R.id.layoutFaqContainer);
+        firestore = FirebaseFirestore.getInstance();
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -47,25 +46,21 @@ public class FaqFragment extends Fragment {
             return;
         }
 
-        // Fetch accountType from Firebase
-        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users")
-                .child(currentUser.getUid());
+        // Fetch accountType from Firestore
+        firestore.collection("users")
+                .document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(this::handleUserSnapshot)
+                .addOnFailureListener(e -> showSnackbar("Failed to load account type: " + e.getMessage()));
+    }
 
-        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) return;
-                String type = snapshot.child("accountType").getValue(String.class);
-                accountType = type != null ? type : "user";
-                loadFaqsForAccountType(accountType);
-            }
+    private void handleUserSnapshot(DocumentSnapshot snapshot) {
+        if (!snapshot.exists()) return;
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                showSnackbar("Failed to load account type.");
-            }
-        });
+        String type = snapshot.getString("accountType");
+        accountType = type != null ? type : "user";
+
+        loadFaqsForAccountType(accountType);
     }
 
     private void loadFaqsForAccountType(String accountType) {

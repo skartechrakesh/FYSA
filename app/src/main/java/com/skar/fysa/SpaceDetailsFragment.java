@@ -17,11 +17,10 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,14 +29,13 @@ import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
     private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory;
     private Button btnDirections, btnBook;
     private Space space;
     private String spaceId, spaceName, ownerId;
     private double latitude, longitude;
+
+    private FirebaseFirestore firestore;
 
     @Nullable
     @Override
@@ -55,8 +53,9 @@ public class SpaceDetailsFragment extends Fragment {
         btnBook = view.findViewById(R.id.btnBook);
         tvCategory = view.findViewById(R.id.tvCategory);
 
+        firestore = FirebaseFirestore.getInstance();
+
         if (getArguments() != null) {
-            // ✅ Now retrieving Space as Parcelable
             space = getArguments().getParcelable("space");
             if (space != null) loadSpace();
         }
@@ -118,40 +117,33 @@ public class SpaceDetailsFragment extends Fragment {
             }
 
             final String userId = auth.getCurrentUser().getUid();
+            CollectionReference bookingsRef = firestore.collection("spaces")
+                    .document(spaceId)
+                    .collection("bookings");
 
-            DatabaseReference bookingsRef = FirebaseDatabase.getInstance(DB_URL)
-                    .getReference("spaces")
-                    .child(spaceId)
-                    .child("bookings");
-
-            bookingsRef.orderByChild("userId").equalTo(userId)
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            boolean alreadyBooked = false;
-                            for (DataSnapshot bookingSnap : snapshot.getChildren()) {
-                                BookingsDataModel booking = bookingSnap.getValue(BookingsDataModel.class);
-                                if (booking != null && spaceId.equals(booking.getSpaceId())) {
-                                    alreadyBooked = true;
-                                    break;
-                                }
-                            }
-
-                            if (alreadyBooked) {
-                                Snackbar.make(requireView(),
-                                        "You have already booked this space.", Snackbar.LENGTH_SHORT).show();
-                            } else {
-                                createNewBooking(userId);
+            // Check if user already booked
+            bookingsRef.whereEqualTo("userId", userId)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        boolean alreadyBooked = false;
+                        for (DocumentSnapshot snap : queryDocumentSnapshots.getDocuments()) {
+                            BookingsDataModel booking = snap.toObject(BookingsDataModel.class);
+                            if (booking != null && spaceId.equals(booking.getSpaceId())) {
+                                alreadyBooked = true;
+                                break;
                             }
                         }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
+                        if (alreadyBooked) {
                             Snackbar.make(requireView(),
-                                    "Failed to check bookings: " + error.getMessage(),
-                                    Snackbar.LENGTH_LONG).show();
+                                    "You have already booked this space.", Snackbar.LENGTH_SHORT).show();
+                        } else {
+                            createNewBooking(userId);
                         }
-                    });
+                    })
+                    .addOnFailureListener(e -> Snackbar.make(requireView(),
+                            "Failed to check bookings: " + e.getMessage(),
+                            Snackbar.LENGTH_LONG).show());
         });
     }
 
@@ -159,72 +151,56 @@ public class SpaceDetailsFragment extends Fragment {
         final String date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
         final long createdAt = System.currentTimeMillis();
 
-        DatabaseReference userRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users")
-                .child(userId);
+        firestore.collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener(userSnapshot -> {
+                    final String usernameFromDb = userSnapshot.contains("username")
+                            ? userSnapshot.getString("username")
+                            : "User";
+                    final String userContactFromDb = userSnapshot.contains("contact")
+                            ? userSnapshot.getString("contact")
+                            : "No Contact Provided";
 
-        userRef.get().addOnSuccessListener(userSnapshot -> {
-            final String usernameFromDb = userSnapshot.child("username").exists()
-                    ? userSnapshot.child("username").getValue(String.class)
-                    : "User";
-            final String userContactFromDb = userSnapshot.child("contact").exists()
-                    ? userSnapshot.child("contact").getValue(String.class)
-                    : "No Contact Provided";
+                    BookingsDataModel booking = new BookingsDataModel(
+                            userId,
+                            usernameFromDb,
+                            userContactFromDb,
+                            spaceId,
+                            spaceName,
+                            space.getCategory(),
+                            date,
+                            false,
+                            createdAt,
+                            "Booked Visit",
+                            latitude,
+                            longitude
+                    );
 
-            BookingsDataModel booking = new BookingsDataModel(
-                    userId,
-                    usernameFromDb,
-                    userContactFromDb,
-                    spaceId,
-                    spaceName,
-                    space.getCategory(),
-                    date,
-                    false,
-                    createdAt,
-                    "Booked Visit",
-                    latitude,
-                    longitude
-            );
+                    // Add booking to space's bookings collection
+                    firestore.collection("spaces")
+                            .document(spaceId)
+                            .collection("bookings")
+                            .add(booking)
+                            .addOnSuccessListener(docRef -> {
+                                String bookingId = docRef.getId();
 
-            DatabaseReference bookingDataRef = FirebaseDatabase.getInstance(DB_URL)
-                    .getReference("spaces")
-                    .child(spaceId)
-                    .child("bookings")
-                    .push();
-
-            String bookingId = bookingDataRef.getKey();
-
-            bookingDataRef.setValue(booking)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            DatabaseReference userBookingRef = FirebaseDatabase.getInstance(DB_URL)
-                                    .getReference("users")
-                                    .child(userId)
-                                    .child("booking_reference")
-                                    .child(bookingId);
-
-                            userBookingRef.setValue(true)
-                                    .addOnCompleteListener(refTask -> {
-                                        if (refTask.isSuccessful()) {
-                                            Snackbar.make(requireView(),
-                                                    "Visit booked successfully!",
-                                                    Snackbar.LENGTH_SHORT).show();
-                                        } else {
-                                            Snackbar.make(requireView(),
-                                                    "Booking saved but failed to update user: "
-                                                            + Objects.requireNonNull(refTask.getException()).getMessage(),
-                                                    Snackbar.LENGTH_LONG).show();
-                                        }
-                                    });
-
-                        } else {
-                            Snackbar.make(requireView(),
-                                    "Booking failed: " + Objects.requireNonNull(task.getException()).getMessage(),
-                                    Snackbar.LENGTH_LONG).show();
-                        }
-                    });
-
-        }).addOnFailureListener(e -> Snackbar.make(requireView(),
-                "Failed to fetch user data: " + e.getMessage(), Snackbar.LENGTH_SHORT).show());
+                                // --- ADD BOOKING REFERENCE AS MAP IN USER DOCUMENT ---
+                                firestore.collection("users")
+                                        .document(userId)
+                                        .update("booking_reference." + bookingId, true)
+                                        .addOnSuccessListener(aVoid -> Snackbar.make(requireView(),
+                                                "Visit booked successfully!",
+                                                Snackbar.LENGTH_SHORT).show())
+                                        .addOnFailureListener(e -> Snackbar.make(requireView(),
+                                                "Booking saved but failed to update user reference: " + e.getMessage(),
+                                                Snackbar.LENGTH_LONG).show());
+                            })
+                            .addOnFailureListener(e -> Snackbar.make(requireView(),
+                                    "Booking failed: " + e.getMessage(),
+                                    Snackbar.LENGTH_LONG).show());
+                })
+                .addOnFailureListener(e -> Snackbar.make(requireView(),
+                        "Failed to fetch user data: " + e.getMessage(), Snackbar.LENGTH_SHORT).show());
     }
 }

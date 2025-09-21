@@ -20,24 +20,22 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 @SuppressWarnings("deprecation")
 public class LoginActivity extends AppCompatActivity {
 
-    // Theme preference keys from RegisterActivity
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
+
     private ImageButton btnThemeToggle;
     private Button btnLoginSubmit;
     private ProgressBar progressBar;
     private TextInputLayout emailLayout, passwordLayout;
+
     private FirebaseAuth auth;
-    private DatabaseReference usersRef;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,8 +56,7 @@ public class LoginActivity extends AppCompatActivity {
         passwordLayout = findViewById(R.id.passwordLayout);
 
         auth = FirebaseAuth.getInstance();
-        String FIREBASE_DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-        usersRef = FirebaseDatabase.getInstance(FIREBASE_DB_URL).getReference("users");
+        firestore = FirebaseFirestore.getInstance();
 
         btnThemeToggle.setOnClickListener(v -> changeTheme());
 
@@ -81,17 +78,12 @@ public class LoginActivity extends AppCompatActivity {
 
     private void changeTheme() {
         int nightMode = AppCompatDelegate.getDefaultNightMode();
-        int newNightMode;
-        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) {
-            newNightMode = AppCompatDelegate.MODE_NIGHT_NO;
-        } else {
-            newNightMode = AppCompatDelegate.MODE_NIGHT_YES;
-        }
+        int newNightMode = (nightMode == AppCompatDelegate.MODE_NIGHT_YES)
+                ? AppCompatDelegate.MODE_NIGHT_NO
+                : AppCompatDelegate.MODE_NIGHT_YES;
 
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(KEY_THEME_MODE, newNightMode);
-        editor.apply();
+        sharedPreferences.edit().putInt(KEY_THEME_MODE, newNightMode).apply();
 
         AppCompatDelegate.setDefaultNightMode(newNightMode);
         recreate();
@@ -152,32 +144,32 @@ public class LoginActivity extends AppCompatActivity {
 
     private void redirectToDashboard(String uid) {
         setLoading(true);
-        usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                setLoading(false);
-                if (snapshot.exists()) {
-                    String accountType = snapshot.child("accountType").getValue(String.class);
-                    Intent intent = "owner".equalsIgnoreCase(accountType)
-                            ? new Intent(LoginActivity.this, OwnerDashboardActivity.class)
-                            : new Intent(LoginActivity.this, UserDashboardActivity.class);
 
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                            Intent.FLAG_ACTIVITY_NEW_TASK |
-                            Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    showSnackbar("User not found in database.");
-                }
-            }
+        firestore.collection("users").document(uid).get()
+                .addOnCompleteListener(task -> {
+                    setLoading(false);
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot snapshot = task.getResult();
+                        if (snapshot != null && snapshot.exists()) {
+                            String accountType = snapshot.getString("accountType");
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                setLoading(false);
-                showSnackbar("Database error: " + error.getMessage());
-            }
-        });
+                            Intent intent = "owner".equalsIgnoreCase(accountType)
+                                    ? new Intent(LoginActivity.this, OwnerDashboardActivity.class)
+                                    : new Intent(LoginActivity.this, UserDashboardActivity.class);
+
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                                    Intent.FLAG_ACTIVITY_NEW_TASK |
+                                    Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            showSnackbar("User not found in database.");
+                        }
+                    } else {
+                        showSnackbar("Error fetching user: " +
+                                (task.getException() != null ? task.getException().getMessage() : ""));
+                    }
+                });
     }
 
     private void setLoading(boolean loading) {

@@ -12,7 +12,7 @@
         android:title="@string/find_space" />
 
     <item
-        android:id="@+id/nav_settings"
+        android:id="@+id/nav_settings1"
         android:icon="@drawable/ic_preferences"
         android:title="@string/settings" />
 

@@ -32,11 +32,9 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,9 +44,8 @@ public class FindYourSpaceFragment extends Fragment {
 
     private static final double MAX_DISTANCE_METERS = 5000;
     private static final String TAG = "FindYourSpaceFragment";
-    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test ad
     private final List<Space> spaceList = new ArrayList<>();
-    private final String DB_URL = "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     private RecyclerView recyclerView;
     private SpacesAdapter adapter;
@@ -60,9 +57,7 @@ public class FindYourSpaceFragment extends Fragment {
     private String selectedCategory = null;
     private FusedLocationProviderClient fusedLocationClient;
 
-    // Pagination placeholders
-    private String lastKey = null;
-    private boolean isLoading = false;
+    private FirebaseFirestore firestore;
 
     private final ActivityResultLauncher<String[]> permissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
@@ -80,7 +75,7 @@ public class FindYourSpaceFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString("selectedCategory", selectedCategory);
-        outState.putParcelableArrayList("spaceList", new ArrayList<>(spaceList)); // ✅ Parcelable
+        outState.putParcelableArrayList("spaceList", new ArrayList<>(spaceList));
     }
 
     @Override
@@ -99,13 +94,13 @@ public class FindYourSpaceFragment extends Fragment {
         swipeRefresh = view.findViewById(R.id.swipeRefresh);
         nativeAdView = view.findViewById(R.id.native_ad_view);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        firestore = FirebaseFirestore.getInstance();
 
         adapter = new SpacesAdapter(spaceList, space -> {
             SpaceDetailsFragment fragment = new SpaceDetailsFragment();
             Bundle args = new Bundle();
-            args.putParcelable("space", space); // ✅ Parcelable
+            args.putParcelable("space", space);
             fragment.setArguments(args);
-
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragmentContainer, fragment)
@@ -143,15 +138,13 @@ public class FindYourSpaceFragment extends Fragment {
 
         if (savedInstanceState != null) {
             selectedCategory = savedInstanceState.getString("selectedCategory");
-            ArrayList<Space> savedSpaces = savedInstanceState.getParcelableArrayList("spaceList"); // ✅ Parcelable
+            ArrayList<Space> savedSpaces = savedInstanceState.getParcelableArrayList("spaceList");
             if (savedSpaces != null) {
                 spaceList.clear();
                 spaceList.addAll(savedSpaces);
                 adapter.submitList(new ArrayList<>(spaceList));
             }
-            if (selectedCategory != null) {
-                fetchUserLocationAndThenSpaces();
-            }
+            if (selectedCategory != null) fetchUserLocationAndThenSpaces();
         }
 
         return view;
@@ -168,9 +161,7 @@ public class FindYourSpaceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (selectedCategory != null) {
-            fetchUserLocationAndThenSpaces();
-        }
+        if (selectedCategory != null) fetchUserLocationAndThenSpaces();
     }
 
     private void fetchUserLocationAndThenSpaces() {
@@ -187,88 +178,68 @@ public class FindYourSpaceFragment extends Fragment {
 
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener(location -> {
-                    if (location != null) {
-                        userLocation = location;
-                        Log.d(TAG, "User location: " + location.getLatitude() + ", " + location.getLongitude());
-                    } else {
-                        Log.w(TAG, "User location is null, fallback to lastLocation");
-                        fusedLocationClient.getLastLocation().addOnSuccessListener(last -> userLocation = last);
-                    }
-                    loadNearbySpacesFromFirebase();
+                    if (location != null) userLocation = location;
+                    else fusedLocationClient.getLastLocation().addOnSuccessListener(last -> userLocation = last);
+                    loadNearbySpacesFromFirestore();
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to get current location: " + e.getMessage());
-                    loadNearbySpacesFromFirebase(); // fallback
+                    Log.e(TAG, "Failed to get location: " + e.getMessage());
+                    loadNearbySpacesFromFirestore();
                 });
     }
 
-    private void loadNearbySpacesFromFirebase() {
+    private void loadNearbySpacesFromFirestore() {
         swipeRefresh.setRefreshing(true);
+        spaceList.clear();
 
-        DatabaseReference spacesRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("spaces");
+        firestore.collection("spaces")
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(this::processSpaces)
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Firestore error: " + e.getMessage());
+                    swipeRefresh.setRefreshing(false);
+                });
+    }
 
-        spacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                spaceList.clear();
+    private void processSpaces(QuerySnapshot snapshots) {
+        for (QueryDocumentSnapshot doc : snapshots) {
+            Space space = doc.toObject(Space.class);
+            space.setId(doc.getId());
 
-                for (DataSnapshot spaceSnap : snapshot.getChildren()) {
-                    Space space = spaceSnap.getValue(Space.class);
-                    if (space == null || !Boolean.TRUE.equals(space.isVacancy())) continue;
-                    if (!spaceSnap.hasChild("latitude") || !spaceSnap.hasChild("longitude"))
-                        continue;
+            if (selectedCategory != null && !selectedCategory.equalsIgnoreCase(space.getCategory()))
+                continue;
 
-                    if (space.getId() == null || space.getId().isEmpty()) {
-                        space.setId(spaceSnap.getKey());
-                    }
+            if (userLocation != null) {
+                float[] results = new float[1];
+                Location.distanceBetween(
+                        userLocation.getLatitude(),
+                        userLocation.getLongitude(),
+                        space.getLatitude(),
+                        space.getLongitude(),
+                        results
+                );
+                int distanceMeters = (int) results[0];
+                space.setDistanceMeters(distanceMeters);
 
-                    if (selectedCategory != null &&
-                            !selectedCategory.equalsIgnoreCase(space.getCategory())) {
-                        continue;
-                    }
-
-                    if (userLocation != null) {
-                        float[] results = new float[1];
-                        Location.distanceBetween(
-                                userLocation.getLatitude(),
-                                userLocation.getLongitude(),
-                                space.getLatitude(),
-                                space.getLongitude(),
-                                results
-                        );
-                        int distanceMeters = (int) results[0];
-                        space.setDistanceMeters(distanceMeters);
-
-                        if (distanceMeters <= MAX_DISTANCE_METERS) {
-                            spaceList.add(space);
-                        }
-                    } else {
-                        space.setDistanceMeters(-1); // fallback
-                        spaceList.add(space);
-                    }
-                }
-
-                // Sort by distance
-                spaceList.sort(Comparator.comparingInt(s ->
-                        (s.getDistanceMeters() != null && s.getDistanceMeters() >= 0)
-                                ? s.getDistanceMeters()
-                                : Integer.MAX_VALUE));
-
-                adapter.submitList(new ArrayList<>(spaceList));
-                swipeRefresh.setRefreshing(false);
-
-                if (spaceList.isEmpty()) {
-                    Snackbar.make(requireView(), "No nearby spaces found", Snackbar.LENGTH_SHORT).show();
-                }
+                if (distanceMeters <= MAX_DISTANCE_METERS) spaceList.add(space);
+            } else {
+                space.setDistanceMeters(-1);
+                spaceList.add(space);
             }
+        }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Firebase error: " + error.getMessage());
-                swipeRefresh.setRefreshing(false);
-            }
-        });
+        // Sort by distance
+        spaceList.sort(Comparator.comparingInt(s ->
+                (s.getDistanceMeters() != null && s.getDistanceMeters() >= 0)
+                        ? s.getDistanceMeters()
+                        : Integer.MAX_VALUE));
+
+        adapter.submitList(new ArrayList<>(spaceList));
+        swipeRefresh.setRefreshing(false);
+
+        if (spaceList.isEmpty())
+            Snackbar.make(requireView(), "No nearby spaces found", Snackbar.LENGTH_SHORT).show();
     }
 
     private void loadNativeAd() {
@@ -286,7 +257,6 @@ public class FindYourSpaceFragment extends Fragment {
                         nativeAdView.setVisibility(View.GONE);
                     }
                 }).build();
-
         adLoader.loadAd(new AdRequest.Builder().build());
     }
 
@@ -312,10 +282,11 @@ public class FindYourSpaceFragment extends Fragment {
         if (loadedNativeAd != null) loadedNativeAd.destroy();
     }
 
-    // ======= ADAPTER =======
+    // ===== ADAPTER =====
     private static class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceVH> {
         private final List<Space> items = new ArrayList<>();
         private final OnSpaceClick onSpaceClick;
+
         public SpacesAdapter(List<Space> initial, OnSpaceClick onSpaceClick) {
             if (initial != null) items.addAll(initial);
             this.onSpaceClick = onSpaceClick;
@@ -370,15 +341,11 @@ public class FindYourSpaceFragment extends Fragment {
                 tvCategory.setText(space.getCategory());
                 tvOwner.setText(space.getOwnerName());
                 tvAddress.setText(space.getAddress());
-                tvVacancy.setText(Boolean.TRUE.equals(space.isVacancy())
-                        ? "Vacancy Available"
-                        : "Not Available");
+                tvVacancy.setText(Boolean.TRUE.equals(space.isActive()) ? "Vacancy Available" : "Not Available");
 
-                if (space.getDistanceMeters() != null && space.getDistanceMeters() >= 0) {
+                if (space.getDistanceMeters() != null && space.getDistanceMeters() >= 0)
                     tvDistance.setText(space.getDistanceMeters() + " m away");
-                } else {
-                    tvDistance.setText("Distance unavailable");
-                }
+                else tvDistance.setText("Distance unavailable");
 
                 card.setOnClickListener(v -> {
                     if (listener != null) listener.onClick(space);

@@ -26,11 +26,10 @@ import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,18 +37,14 @@ import java.util.Locale;
 
 public class MyBookingsFragment extends Fragment {
 
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
-    private static final String NATIVE_AD_UNIT_ID =
-            "ca-app-pub-3940256099942544/2247696110"; // Test Ad Unit ID
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // Test
     private final List<Booking> bookingList = new ArrayList<>();
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerBookings;
     private BookingAdapter adapter;
     private NativeAdView nativeAdView;
     private NativeAd loadedNativeAd;
-    private DatabaseReference spacesRef;
-    private ValueEventListener spacesListener;
+    private FirebaseFirestore firestore;
 
     public MyBookingsFragment() {
         super(R.layout.fragment_my_bookings);
@@ -67,15 +62,19 @@ public class MyBookingsFragment extends Fragment {
         adapter = new BookingAdapter();
         recyclerBookings.setAdapter(adapter);
 
-        swipeRefreshLayout.setOnRefreshListener(this::loadBookingsFromFirebase);
+        firestore = FirebaseFirestore.getInstance();
+
+        swipeRefreshLayout.setOnRefreshListener(this::loadBookingsFromFirestore);
 
         MobileAds.initialize(requireContext(), initializationStatus -> loadNativeAd());
 
         swipeRefreshLayout.setRefreshing(true);
-        loadBookingsFromFirebase();
+        loadBookingsFromFirestore();
     }
 
-    private void loadBookingsFromFirebase() {
+    private void loadBookingsFromFirestore() {
+        bookingList.clear();
+
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             swipeRefreshLayout.setRefreshing(false);
             swipeRefreshLayout.setEnabled(false);
@@ -84,116 +83,117 @@ public class MyBookingsFragment extends Fragment {
 
         swipeRefreshLayout.setEnabled(true);
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        spacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
 
-        if (spacesListener != null) {
-            spacesRef.removeEventListener(spacesListener);
-        }
-
-        spacesListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                bookingList.clear();
-
-                for (DataSnapshot spaceSnap : snapshot.getChildren()) {
-                    String spaceId = spaceSnap.getKey();
-                    String ownerId = spaceSnap.child("ownerId").getValue(String.class);
-                    String spaceName = spaceSnap.child("name").getValue(String.class);
-                    String category = spaceSnap.child("category").getValue(String.class);
-
-                    DataSnapshot bookingsSnap = spaceSnap.child("bookings");
-                    for (DataSnapshot bookingSnap : bookingsSnap.getChildren()) {
-                        BookingsDataModel bookingData = bookingSnap.getValue(BookingsDataModel.class);
-                        if (bookingData == null) continue;
-
-                        boolean isOwner = currentUserId.equals(ownerId);
-                        boolean isUserBooking = currentUserId.equals(bookingData.getUserId());
-
-                        if (isOwner || isUserBooking) {
-                            // ✅ Updated constructor call to pass all required arguments
-                            Booking booking = new Booking(
-                                    bookingSnap.getKey(),
-                                    bookingData.getUserId(),
-                                    ownerId,
-                                    spaceId,
-                                    spaceName,
-                                    category,
-                                    bookingData.getBookingDate(),
-                                    bookingData.getStatus(),
-                                    bookingData.getUsername(),
-                                    bookingData.getCreatedAt(),
-                                    bookingData.getLatitude(),
-                                    bookingData.getLongitude()
-                            );
-
-                            bookingList.add(booking);
-                        }
+        firestore.collection("spaces")
+                .get()
+                .addOnSuccessListener(spacesSnapshot -> {
+                    List<DocumentSnapshot> spaceDocs = spacesSnapshot.getDocuments();
+                    if (spaceDocs.isEmpty()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                        Snackbar.make(requireView(), "No bookings found", Snackbar.LENGTH_SHORT).show();
+                        return;
                     }
-                }
 
-                // Sort by latest
-                bookingList.sort((b1, b2) -> Long.compare(b2.getCreatedAt(), b1.getCreatedAt()));
+                    final int[] processedCount = {0}; // Track processed spaces
 
-                adapter.submitList(new ArrayList<>(bookingList));
-                swipeRefreshLayout.setRefreshing(false);
+                    for (DocumentSnapshot spaceDoc : spaceDocs) {
+                        String spaceId = spaceDoc.getId();
+                        String ownerId = spaceDoc.getString("ownerId");
+                        String spaceName = spaceDoc.getString("name");
+                        String category = spaceDoc.getString("category");
+                        String spaceAddress = spaceDoc.getString("address"); // ✅ fetch address
 
-                if (bookingList.isEmpty()) {
-                    Snackbar.make(requireView(), "No bookings found", Snackbar.LENGTH_SHORT).show();
-                }
-            }
+                        CollectionReference bookingsRef = firestore.collection("spaces")
+                                .document(spaceId)
+                                .collection("bookings");
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                swipeRefreshLayout.setRefreshing(false);
-                Snackbar.make(requireView(),
-                        "Failed to load bookings: " + error.getMessage(),
-                        Snackbar.LENGTH_LONG).show();
-            }
-        };
+                        bookingsRef.whereEqualTo("userId", currentUserId)
+                                .get()
+                                .addOnSuccessListener(bookingSnapshots -> {
+                                    for (DocumentSnapshot bookingSnap : bookingSnapshots.getDocuments()) {
+                                        BookingsDataModel bookingData = bookingSnap.toObject(BookingsDataModel.class);
+                                        if (bookingData == null) continue;
 
-        spacesRef.addValueEventListener(spacesListener);
+                                        boolean isOwner = currentUserId.equals(ownerId);
+                                        boolean isUserBooking = currentUserId.equals(bookingData.getUserId());
+
+                                        if (isOwner || isUserBooking) {
+                                            Booking booking = new Booking(
+                                                    bookingSnap.getId(),
+                                                    bookingData.getUserId(),
+                                                    ownerId,
+                                                    spaceId,
+                                                    spaceName,
+                                                    spaceAddress, // ✅ pass address
+                                                    category,
+                                                    bookingData.getBookingDate(),
+                                                    bookingData.getStatus(),
+                                                    bookingData.getUsername(),
+                                                    bookingData.getCreatedAt(),
+                                                    bookingData.getLatitude(),
+                                                    bookingData.getLongitude()
+                                            );
+                                            bookingList.add(booking);
+                                        }
+                                    }
+
+                                    processedCount[0]++;
+                                    if (processedCount[0] == spaceDocs.size()) {
+                                        // All spaces processed
+                                        bookingList.sort((b1, b2) -> Long.compare(b2.getCreatedAt(), b1.getCreatedAt()));
+                                        adapter.submitList(new ArrayList<>(bookingList));
+                                        swipeRefreshLayout.setRefreshing(false);
+
+                                        if (bookingList.isEmpty()) {
+                                            Snackbar.make(requireView(), "No bookings found", Snackbar.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    processedCount[0]++;
+                                    if (processedCount[0] == spaceDocs.size()) {
+                                        swipeRefreshLayout.setRefreshing(false);
+                                        if (bookingList.isEmpty()) {
+                                            Snackbar.make(requireView(), "No bookings found", Snackbar.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                    Snackbar.make(requireView(), "Failed to load bookings: " + e.getMessage(),
+                                            Snackbar.LENGTH_LONG).show();
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    swipeRefreshLayout.setRefreshing(false);
+                    Snackbar.make(requireView(), "Failed to load spaces: " + e.getMessage(),
+                            Snackbar.LENGTH_LONG).show();
+                });
     }
 
     private void cancelBooking(Booking booking) {
-        if (booking == null) return;
+        if (booking == null || FirebaseAuth.getInstance().getCurrentUser() == null) return;
 
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        DatabaseReference bookingRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("spaces")
-                .child(booking.getSpaceId())
-                .child("bookings")
-                .child(booking.getBookingId());
-
-        DatabaseReference userBookingRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users")
-                .child(currentUserId)
-                .child("booking_reference")
-                .child(booking.getBookingId());
-
-        // First delete from spaces node
-        bookingRef.removeValue().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                // Now also delete from user's booking_reference
-                userBookingRef.removeValue().addOnCompleteListener(refTask -> {
-                    if (refTask.isSuccessful()) {
-                        bookingList.remove(booking);
-                        adapter.submitList(new ArrayList<>(bookingList));
-                        Snackbar.make(requireView(),
-                                "Booking cancelled successfully",
-                                Snackbar.LENGTH_SHORT).show();
-                    } else if (refTask.getException() != null) {
-                        Snackbar.make(requireView(),
-                                "Failed to remove user reference: " + refTask.getException().getMessage(),
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                });
-            } else if (task.getException() != null) {
-                Snackbar.make(requireView(),
-                        "Failed to cancel booking: " + task.getException().getMessage(),
-                        Snackbar.LENGTH_LONG).show();
-            }
-        });
+        firestore.collection("spaces")
+                .document(booking.getSpaceId())
+                .collection("bookings")
+                .document(booking.getBookingId())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // Remove booking_reference from user document map
+                    firestore.collection("users")
+                            .document(currentUserId)
+                            .update("booking_reference." + booking.getBookingId(), FieldValue.delete())
+                            .addOnSuccessListener(aVoid1 -> {
+                                bookingList.remove(booking);
+                                adapter.submitList(new ArrayList<>(bookingList));
+                                Snackbar.make(requireView(), "Booking cancelled successfully", Snackbar.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e ->
+                                    Snackbar.make(requireView(), "Failed to remove booking reference: " + e.getMessage(), Snackbar.LENGTH_LONG).show());
+                })
+                .addOnFailureListener(e ->
+                        Snackbar.make(requireView(), "Failed to cancel booking: " + e.getMessage(), Snackbar.LENGTH_LONG).show());
     }
 
     private void loadNativeAd() {
@@ -252,9 +252,6 @@ public class MyBookingsFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (spacesRef != null && spacesListener != null) {
-            spacesRef.removeEventListener(spacesListener);
-        }
         if (loadedNativeAd != null) loadedNativeAd.destroy();
     }
 
@@ -289,12 +286,13 @@ public class MyBookingsFragment extends Fragment {
         }
 
         private class BookingViewHolder extends RecyclerView.ViewHolder {
-            TextView tvSpaceName, tvSpaceType, tvDate, tvStatus, tvCancel;
+            TextView tvSpaceName, tvSpaceAddress, tvSpaceType, tvDate, tvStatus, tvCancel;
             Button btnDirections;
 
             BookingViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvSpaceName = itemView.findViewById(R.id.tvBookingName);
+                tvSpaceAddress = itemView.findViewById(R.id.tvBookingAddress); // ✅ bind address view
                 tvSpaceType = itemView.findViewById(R.id.tvBookingType);
                 tvDate = itemView.findViewById(R.id.tvBookingDate);
                 tvStatus = itemView.findViewById(R.id.tvBookingStatus);
@@ -304,6 +302,7 @@ public class MyBookingsFragment extends Fragment {
 
             void bind(Booking booking) {
                 tvSpaceName.setText(booking.getSpaceName());
+                tvSpaceAddress.setText(booking.getSpaceAddress()); // ✅ set address
                 tvSpaceType.setText(booking.getSpaceType());
                 tvDate.setText(booking.getBookingDate());
                 tvStatus.setText(booking.getStatus());
@@ -313,9 +312,7 @@ public class MyBookingsFragment extends Fragment {
                 }
 
                 if (btnDirections != null) {
-                    btnDirections.setOnClickListener(v -> {
-                        getDirections(booking.getLatitude(), booking.getLongitude());
-                    });
+                    btnDirections.setOnClickListener(v -> getDirections(booking.getLatitude(), booking.getLongitude()));
                 }
             }
         }

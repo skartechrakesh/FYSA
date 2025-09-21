@@ -13,11 +13,10 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.DocumentReference;
+
 
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
@@ -25,7 +24,7 @@ public class SplashActivity extends AppCompatActivity {
     private static final int SPLASH_DELAY = 1500; // 1.5 seconds
 
     private FirebaseAuth mAuth;
-    private DatabaseReference usersRef;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,9 +34,8 @@ public class SplashActivity extends AppCompatActivity {
         AppCompatDelegate.setDefaultNightMode(savedTheme);
 
         mAuth = FirebaseAuth.getInstance();
-        usersRef = FirebaseDatabase
-                .getInstance("https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                .getReference("users");
+        firestore = FirebaseFirestore.getInstance();
+
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
@@ -59,30 +57,25 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void redirectUser(String uid) {
-        usersRef.child(uid).child("accountType")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        Intent intent;
-                        if (snapshot.exists()) {
-                            String accountType = snapshot.getValue(String.class);
-                            if ("owner".equalsIgnoreCase(accountType)) {
-                                intent = new Intent(SplashActivity.this, OwnerDashboardActivity.class);
-                            } else {
-                                intent = new Intent(SplashActivity.this, UserDashboardActivity.class);
-                            }
-                        } else {
-                            intent = new Intent(SplashActivity.this, MainActivity.class);
-                        }
-                        launchAndFinish(intent);
-                    }
+        DocumentReference userRef = firestore.collection("users").document(uid);
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        goToMainActivity();
-                    }
-                });
+        userRef.get().addOnCompleteListener(task -> {
+            Intent intent;
+            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                DocumentSnapshot snapshot = task.getResult();
+                String accountType = snapshot.getString("accountType");
+                if ("owner".equalsIgnoreCase(accountType)) {
+                    intent = new Intent(SplashActivity.this, OwnerDashboardActivity.class);
+                } else {
+                    intent = new Intent(SplashActivity.this, UserDashboardActivity.class);
+                }
+            } else {
+                intent = new Intent(SplashActivity.this, MainActivity.class);
+            }
+            launchAndFinish(intent);
+        });
     }
+
 
     /**
      * ---------- HELPERS ----------

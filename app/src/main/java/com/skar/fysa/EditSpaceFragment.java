@@ -8,7 +8,6 @@ import android.content.res.ColorStateList;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,11 +35,10 @@ import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -54,8 +52,7 @@ import java.util.Objects;
 public class EditSpaceFragment extends Fragment {
 
     private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
+
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
     private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;
     private FloatingActionButton btnMyLocation;
@@ -63,13 +60,15 @@ public class EditSpaceFragment extends Fragment {
     private MaterialButton btnSubmit;
     private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout;
     private MapView mapView;
+
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) moveToCurrentLocation();
-                else
-                    Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
+                else Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
             });
-    private DatabaseReference globalSpacesRef;
+
+    private FirebaseFirestore firestore;
+    private CollectionReference spacesRef;
     private String currentUserId;
     private Space space;
     private InterstitialAd mInterstitialAd;
@@ -108,6 +107,7 @@ public class EditSpaceFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_edit_space, container, false);
 
+        // OSMDroid setup
         Configuration.getInstance().load(requireContext(),
                 requireContext().getSharedPreferences("osmdroid_prefs", 0));
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
@@ -118,9 +118,9 @@ public class EditSpaceFragment extends Fragment {
         }
 
         currentUserId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
-        globalSpacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
+        firestore = FirebaseFirestore.getInstance();
+        spacesRef = firestore.collection("spaces");
 
-        // ✅ Use Parcelable instead of Serializable
         space = getArguments().getParcelable("space");
         if (space == null) {
             Snackbar.make(view, "Error: No space data received", Snackbar.LENGTH_LONG).show();
@@ -175,34 +175,15 @@ public class EditSpaceFragment extends Fragment {
                 android.R.layout.simple_dropdown_item_1line, options);
         spinnerVacancy.setAdapter(adapter);
 
-        spinnerVacancy.setText(space.isVacancy() ? "Yes" : "No", false);
+        String currentValue = (space.isActive() != null && space.isActive()) ? "Yes" : "No";
+        spinnerVacancy.post(() -> spinnerVacancy.setText(currentValue, false));
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
 
-        btnSubmit.setOnClickListener(v -> {
-            new Handler().postDelayed(() -> {
-                if (mInterstitialAd != null) {
-                    mInterstitialAd.show(requireActivity());
-                    mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                        @Override
-                        public void onAdDismissedFullScreenContent() {
-                            updateSpace();
-                            loadInterstitialAd();
-                        }
-
-                        @Override
-                        public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
-                            updateSpace();
-                        }
-                    });
-                } else {
-                    updateSpace();
-                }
-            }, 1000);
-        });
+        btnSubmit.setOnClickListener(v -> checkUniqueNameAndShowAd());
 
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
@@ -251,6 +232,7 @@ public class EditSpaceFragment extends Fragment {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private void moveToCurrentLocation() {
         android.location.LocationManager lm =
                 (android.location.LocationManager) requireContext().getSystemService(getContext().LOCATION_SERVICE);
@@ -272,7 +254,64 @@ public class EditSpaceFragment extends Fragment {
         }
     }
 
-    private void updateSpace() {
+    // -------------------- Unique Name Check & Ad Flow --------------------
+    private void checkUniqueNameAndShowAd() {
+        String name = inputName.getText() != null ? inputName.getText().toString().trim() : "";
+
+        if (name.isEmpty()) {
+            Snackbar.make(requireView(), "Name cannot be empty", Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        spacesRef
+                .whereEqualTo("ownerId", currentUserId)  // only current user's spaces
+                .whereEqualTo("name", name)              // check the name
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    boolean exists = false;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        if (!doc.getId().equals(space.getId())) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    if (exists) {
+                        Snackbar.make(requireView(), "Space name already exists. Please use a different name.", Snackbar.LENGTH_LONG).show();
+                    } else {
+                        showAdThenSave();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Snackbar.make(requireView(), "Failed to check space name. Updating anyway.", Snackbar.LENGTH_SHORT).show();
+                    showAdThenSave();
+                });
+    }
+
+    private void showAdThenSave() {
+        new Handler().postDelayed(() -> {
+            if (mInterstitialAd != null) {
+                mInterstitialAd.show(requireActivity());
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        saveUpdatedSpace();
+                        loadInterstitialAd();
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                        saveUpdatedSpace();
+                    }
+                });
+            } else {
+                saveUpdatedSpace();
+            }
+        }, 500);
+    }
+
+    // -------------------- Save / Update Space --------------------
+    private void saveUpdatedSpace() {
         String name = inputName.getText() != null ? inputName.getText().toString().trim() : "";
         String ownerName = inputOwnerName.getText() != null ? inputOwnerName.getText().toString().trim() : "";
         String contact = inputContact.getText() != null ? inputContact.getText().toString().trim() : "";
@@ -286,85 +325,86 @@ public class EditSpaceFragment extends Fragment {
         }
 
         GeoPoint center = (GeoPoint) mapView.getMapCenter();
+        boolean isActive = vacancyText.equals("Yes");
 
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("name", name);
-        updates.put("ownerName", ownerName);
-        updates.put("contact", contact);
-        updates.put("address", address);
-        updates.put("latitude", center.getLatitude());
-        updates.put("longitude", center.getLongitude());
-        updates.put("category", category);
-        updates.put("vacancy", vacancyText.equals("Yes"));
+        DocumentReference spaceDocRef = spacesRef.document(space.getId());
 
-        globalSpacesRef.child(space.getId())
-                .updateChildren(updates)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Update the local space object to reflect the changes
-                        space.setName(name);
-                        space.setOwnerName(ownerName);
-                        space.setContact(contact);
-                        space.setAddress(address);
-                        space.setLatitude(center.getLatitude());
-                        space.setLongitude(center.getLongitude());
-                        space.setCategory(category);
-                        space.setVacancy(vacancyText.equals("Yes"));
+        Map<String, Object> spaceUpdates = new HashMap<>();
+        spaceUpdates.put("name", name);
+        spaceUpdates.put("ownerName", ownerName);
+        spaceUpdates.put("contact", contact);
+        spaceUpdates.put("address", address);
+        spaceUpdates.put("latitude", center.getLatitude());
+        spaceUpdates.put("longitude", center.getLongitude());
+        spaceUpdates.put("category", category);
+        spaceUpdates.put("active", isActive);
+        spaceUpdates.put("ownerId", currentUserId);
 
-                        // ✅ Update bookings linked to this space
-                        updateBookingsForSpace(space.getId(), space);
-
-                        Bundle result = new Bundle();
-                        // ✅ Use Parcelable instead of Serializable
-                        result.putParcelable("space", space);
-                        getParentFragmentManager().setFragmentResult("edit_space_result", result);
-
-                        if (onSpaceUpdatedListener != null) {
-                            onSpaceUpdatedListener.onSpaceUpdated(space);
-                        }
-                        Snackbar.make(requireView(), "Space updated successfully!", Snackbar.LENGTH_SHORT).show();
-                        requireActivity().getSupportFragmentManager().popBackStack();
-                    } else {
-                        Snackbar.make(requireView(),
-                                "Update failed: " + Objects.requireNonNull(task.getException()).getMessage(),
-                                Snackbar.LENGTH_LONG).show();
-                    }
-                });
+        spaceDocRef.update(spaceUpdates)
+                .addOnSuccessListener(unused ->
+                        updateBookingsAfterSpaceEdit(name, ownerName, contact, address, category, center, isActive)
+                )
+                .addOnFailureListener(e -> Snackbar.make(requireView(),
+                        "Space update failed: " + e.getMessage(),
+                        Snackbar.LENGTH_LONG).show());
     }
 
-    // ✅ Update bookings with new space details
-    private void updateBookingsForSpace(String spaceId, Space updatedSpace) {
-        DatabaseReference bookingsRef = globalSpacesRef.child(spaceId).child("bookings");
+    private void updateBookingsAfterSpaceEdit(String name, String ownerName, String contact, String address,
+                                              String category, GeoPoint center, boolean isActive) {
 
-        bookingsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    for (DataSnapshot bookingSnap : snapshot.getChildren()) {
-                        Map<String, Object> bookingUpdates = new HashMap<>();
-                        bookingUpdates.put("spaceName", updatedSpace.getName());
-                        bookingUpdates.put("spaceCategory", updatedSpace.getCategory());
-                        bookingUpdates.put("latitude", updatedSpace.getLatitude());
-                        bookingUpdates.put("longitude", updatedSpace.getLongitude());
+        spacesRef.document(space.getId())
+                .collection("bookings")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (DocumentSnapshot bookingSnap : querySnapshot.getDocuments()) {
+                        if (!isActive) {
+                            bookingSnap.getReference().delete();
+                            String userId = bookingSnap.getString("userId");
+                            if (userId != null) {
+                                firestore.collection("users")
+                                        .document(userId)
+                                        .collection("booking_reference")
+                                        .document(bookingSnap.getId())
+                                        .delete();
+                            }
+                        } else {
+                            Map<String, Object> bookingUpdates = new HashMap<>();
+                            bookingUpdates.put("spaceName", name);
+                            bookingUpdates.put("spaceCategory", category);
+                            bookingUpdates.put("latitude", center.getLatitude());
+                            bookingUpdates.put("longitude", center.getLongitude());
+                            bookingUpdates.put("userContact", contact);
 
-                        bookingSnap.getRef().updateChildren(bookingUpdates)
-                                .addOnFailureListener(e -> {
-                                    Log.e("EditSpaceFragment", "Failed to update booking: " + e.getMessage());
-                                });
+                            bookingSnap.getReference().update(bookingUpdates);
+                        }
                     }
-                }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("EditSpaceFragment", "Failed to read bookings for update: " + error.getMessage());
-            }
-        });
+                    // Update local object & UI
+                    space.setName(name);
+                    space.setOwnerName(ownerName);
+                    space.setContact(contact);
+                    space.setAddress(address);
+                    space.setCategory(category);
+                    space.setActive(isActive);
+
+                    Bundle result = new Bundle();
+                    result.putParcelable("space", space);
+                    getParentFragmentManager().setFragmentResult("edit_space_result", result);
+
+                    if (onSpaceUpdatedListener != null) {
+                        onSpaceUpdatedListener.onSpaceUpdated(space);
+                    }
+
+                    Snackbar.make(requireView(), "Space updated successfully!", Snackbar.LENGTH_SHORT).show();
+                    requireActivity().getSupportFragmentManager().popBackStack();
+                })
+                .addOnFailureListener(e -> Snackbar.make(requireView(),
+                        "Failed to fetch bookings: " + e.getMessage(),
+                        Snackbar.LENGTH_LONG).show());
     }
 
     private void loadInterstitialAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
-
         InterstitialAd.load(requireContext(), INTERSTITIAL_AD_UNIT_ID, adRequest,
                 new InterstitialAdLoadCallback() {
                     @Override

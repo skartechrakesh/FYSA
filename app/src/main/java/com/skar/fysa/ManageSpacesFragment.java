@@ -1,5 +1,6 @@
 package com.skar.fysa;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,21 +16,23 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ManageSpacesFragment extends Fragment {
 
-    private static final int BATCH_SIZE = 5;
     private LinearLayout spacesListContainer;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private DatabaseReference globalSpacesRef;
+    private FirebaseFirestore firestore;
+    private FirebaseUser currentUser;
+    private static final int BATCH_SIZE = 5;
 
     @Nullable
     @Override
@@ -41,58 +44,64 @@ public class ManageSpacesFragment extends Fragment {
         spacesListContainer = root.findViewById(R.id.spacesListContainer);
         swipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout);
 
-        globalSpacesRef = FirebaseDatabase.getInstance(
-                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        ).getReference("spaces");
+        firestore = FirebaseFirestore.getInstance();
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return root;
 
-        // Always fetch fresh data when fragment is loaded
-        fetchSpacesFromFirebase(inflater);
+        loadOwnerSpaces(inflater);
 
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            fetchSpacesFromFirebase(inflater);
+            loadOwnerSpaces(inflater);
             swipeRefreshLayout.setRefreshing(false);
         });
 
         return root;
     }
 
-    private void fetchSpacesFromFirebase(LayoutInflater inflater) {
+    private void loadOwnerSpaces(LayoutInflater inflater) {
         spacesListContainer.removeAllViews();
 
-        globalSpacesRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    showSnackbar(spacesListContainer, "No spaces found");
-                    return;
-                }
+        firestore.collection("users")
+                .document(currentUser.getUid())
+                .get()
+                .addOnSuccessListener(userSnap -> {
+                    if (!userSnap.exists()) return;
 
-                List<DataSnapshot> snapshots = new ArrayList<>();
-                for (DataSnapshot snap : snapshot.getChildren()) snapshots.add(snap);
+                    Map<String, Object> spaceRefs = (Map<String, Object>) userSnap.get("space_reference");
+                    if (spaceRefs == null || spaceRefs.isEmpty()) {
+                        showSnackbar(spacesListContainer, "No Spaces Found");
+                        return;
+                    }
 
-                loadNextBatch(inflater, snapshots, 0);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                showSnackbar(spacesListContainer, "Error loading spaces: " + error.getMessage());
-            }
-        });
+                    List<String> spaceIds = new ArrayList<>(spaceRefs.keySet());
+                    loadSpacesInBatches(inflater, spaceIds, 0);
+                })
+                .addOnFailureListener(e ->
+                        showSnackbar(spacesListContainer, "Failed to load spaces: " + e.getMessage()));
     }
 
-    private void loadNextBatch(LayoutInflater inflater, List<DataSnapshot> snapshots, int startIndex) {
-        int endIndex = Math.min(startIndex + BATCH_SIZE, snapshots.size());
+    private void loadSpacesInBatches(LayoutInflater inflater, List<String> spaceIds, int startIndex) {
+        int endIndex = Math.min(startIndex + BATCH_SIZE, spaceIds.size());
 
         for (int i = startIndex; i < endIndex; i++) {
-            DataSnapshot snap = snapshots.get(i);
-            Space space = snap.getValue(Space.class);
-            if (space != null) {
-                space.setId(snap.getKey());
-                addSpaceRow(inflater, space);
-            }
+            String spaceId = spaceIds.get(i);
+            firestore.collection("spaces")
+                    .document(spaceId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            Space space = doc.toObject(Space.class);
+                            if (space != null) {
+                                space.setId(doc.getId());
+                                addSpaceRow(inflater, space);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e ->
+                            showSnackbar(spacesListContainer, "Failed to load space: " + e.getMessage()));
         }
 
-        if (endIndex < snapshots.size()) {
+        if (endIndex < spaceIds.size()) {
             TextView loadMore = new TextView(requireContext());
             loadMore.setText("Load More");
             loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
@@ -101,16 +110,10 @@ public class ManageSpacesFragment extends Fragment {
             loadMore.setPaintFlags(loadMore.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
             loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-            loadMore.setLayoutParams(params);
-
             int nextStart = endIndex;
             loadMore.setOnClickListener(v -> {
                 spacesListContainer.removeView(v);
-                loadNextBatch(inflater, snapshots, nextStart);
+                loadSpacesInBatches(inflater, spaceIds, nextStart);
             });
 
             spacesListContainer.addView(loadMore);
@@ -127,7 +130,7 @@ public class ManageSpacesFragment extends Fragment {
         TextView tvVacancy = row.findViewById(R.id.vacancySwitch);
 
         txtName.setText(space.getName() + " (" + space.getCategory() + ")");
-        if (space.isVacancy()) {
+        if (space.isActive()) {
             tvVacancy.setText("Vacancy Available: Yes");
             tvVacancy.setTextColor(getResources().getColor(R.color.green_500, null));
         } else {
@@ -138,7 +141,7 @@ public class ManageSpacesFragment extends Fragment {
         btnEdit.setOnClickListener(v -> {
             EditSpaceFragment editFragment = new EditSpaceFragment();
             Bundle args = new Bundle();
-            args.putParcelable("space", space); // ✅ use Parcelable
+            args.putParcelable("space", space);
             editFragment.setArguments(args);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
@@ -149,33 +152,60 @@ public class ManageSpacesFragment extends Fragment {
 
         btnDelete.setOnClickListener(v -> new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Space")
-                .setMessage("Are you sure you want to delete " + space.getName() + "?")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    globalSpacesRef.child(space.getId()).removeValue()
-                            .addOnSuccessListener(aVoid -> {
-                                // Remove space from user's reference
-                                FirebaseDatabase.getInstance(
-                                                "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-                                        ).getReference("users")
-                                        .child(space.getOwnerId())
-                                        .child("space_reference")
-                                        .child(space.getId())
-                                        .removeValue()
-                                        .addOnCompleteListener(task -> {
-                                            if (task.isSuccessful())
-                                                showSnackbar(row, "Deleted " + space.getName());
-                                            else
-                                                showSnackbar(row, "Failed to remove space reference");
-
-                                            // Refresh list after deletion
-                                            fetchSpacesFromFirebase(inflater);
-                                        });
-                            });
-                })
+                .setMessage("Are you sure you want to delete " + space.getName() + " and all its bookings?")
+                .setPositiveButton("Yes", (dialog, which) -> deleteSpaceWithBookings(space, row))
                 .setNegativeButton("No", null)
                 .show());
 
         spacesListContainer.addView(row);
+    }
+
+    private void deleteSpaceWithBookings(Space space, View row) {
+        // Delete all bookings first
+        firestore.collection("spaces")
+                .document(space.getId())
+                .collection("bookings")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        var batch = firestore.batch();
+                        for (DocumentSnapshot bookingSnap : querySnapshot.getDocuments()) {
+                            batch.delete(bookingSnap.getReference());
+                        }
+                        batch.commit()
+                                .addOnSuccessListener(aVoid -> deleteSpaceDoc(space, row))
+                                .addOnFailureListener(e ->
+                                        showSnackbar(row, "Failed to delete bookings: " + e.getMessage()));
+                    } else {
+                        // No bookings, delete space directly
+                        deleteSpaceDoc(space, row);
+                    }
+                })
+                .addOnFailureListener(e ->
+                        showSnackbar(row, "Failed to fetch bookings: " + e.getMessage()));
+    }
+
+    private void deleteSpaceDoc(Space space, View row) {
+        firestore.collection("spaces")
+                .document(space.getId())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // Remove from owner's space_reference correctly
+                    firestore.collection("users")
+                            .document(currentUser.getUid())
+                            .update("space_reference." + space.getId(), FieldValue.delete())
+                            .addOnFailureListener(e ->
+                                    showSnackbar(row, "Failed to remove space reference: " + e.getMessage()));
+
+                    showSnackbar(row, "Deleted " + space.getName() + " and its bookings");
+
+                    // Refresh the fragment list
+                    if (getView() != null) {
+                        loadOwnerSpaces(LayoutInflater.from(requireContext()));
+                    }
+                })
+                .addOnFailureListener(e ->
+                        showSnackbar(row, "Failed to delete space: " + e.getMessage()));
     }
 
     private void showSnackbar(View view, String message) {

@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +21,9 @@ import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.interstitial.InterstitialAd;
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.snackbar.Snackbar;
@@ -30,25 +31,27 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class AccountAndSecurityFragment extends Fragment {
 
-    private static final String DB_URL =
-            "https://fysa-793f9-default-rtdb.asia-southeast1.firebasedatabase.app/";
     private ImageView imgProfile;
     private ImageButton btnEditPassword;
     private EditText etName, etUsername, etEmail, etContact;
     private TextView tvAccountType, tvEmailVerified;
     private Button btnSave, btnVerifyEmail, btnDeleteAccount;
-    private DatabaseReference userRef;
+
     private FirebaseUser currentUser;
+    private FirebaseFirestore firestore;
+    private DocumentReference userDocRef;
     private String username, accountType;
     private InterstitialAd mInterstitialAd;
 
@@ -79,9 +82,8 @@ public class AccountAndSecurityFragment extends Fragment {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) return;
 
-        userRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users")
-                .child(currentUser.getUid());
+        firestore = FirebaseFirestore.getInstance();
+        userDocRef = firestore.collection("users").document(currentUser.getUid());
 
         loadUserData();
         updateVerificationUI();
@@ -93,7 +95,7 @@ public class AccountAndSecurityFragment extends Fragment {
             showInterstitialAd();
         });
         btnVerifyEmail.setOnClickListener(v -> sendVerificationEmail());
-        btnDeleteAccount.setOnClickListener(v -> handleDeleteAccount());
+        btnDeleteAccount.setOnClickListener(v -> promptPasswordBeforeDelete());
     }
 
     private void loadInterstitialAd() {
@@ -123,16 +125,17 @@ public class AccountAndSecurityFragment extends Fragment {
     }
 
     private void loadUserData() {
-        userRef.get().addOnSuccessListener(snapshot -> {
+        userDocRef.get().addOnSuccessListener(snapshot -> {
             if (!snapshot.exists()) return;
-            username = snapshot.child("username").getValue(String.class);
-            accountType = snapshot.child("accountType").getValue(String.class);
-            etName.setText(snapshot.child("name").getValue(String.class));
+            username = snapshot.getString("username");
+            accountType = snapshot.getString("accountType");
+            etName.setText(snapshot.getString("name"));
             etUsername.setText(username);
-            etEmail.setText(snapshot.child("email").getValue(String.class));
-            etContact.setText(snapshot.child("contact").getValue(String.class));
+            etEmail.setText(snapshot.getString("email"));
+            etContact.setText(snapshot.getString("contact"));
             tvAccountType.setText(String.format(Locale.getDefault(), "%s", accountType));
-            String imageUrl = snapshot.child("profileImage").getValue(String.class);
+
+            String imageUrl = snapshot.getString("profileImage");
             if (imageUrl != null && !imageUrl.isEmpty()) {
                 Glide.with(AccountAndSecurityFragment.this).load(imageUrl).into(imgProfile);
             }
@@ -160,18 +163,21 @@ public class AccountAndSecurityFragment extends Fragment {
     }
 
     private void saveUserData() {
-        userRef.child("name").setValue(etName.getText().toString().trim());
-        userRef.child("username").setValue(etUsername.getText().toString().trim());
-        userRef.child("email").setValue(etEmail.getText().toString().trim());
-        userRef.child("contact").setValue(etContact.getText().toString().trim());
-        showSnackbar("Saved successfully");
+        userDocRef.update(
+                        "name", etName.getText().toString().trim(),
+                        "username", etUsername.getText().toString().trim(),
+                        "email", etEmail.getText().toString().trim(),
+                        "contact", etContact.getText().toString().trim()
+                ).addOnSuccessListener(aVoid -> showSnackbar("Saved successfully"))
+                .addOnFailureListener(e -> showSnackbar("Failed to save: " + e.getMessage()));
     }
 
     private void showPasswordChangeDialog() {
         if (currentUser == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Change Password");
-        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_change_password, null);
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_change_password, null);
         EditText etCurrentPassword = dialogView.findViewById(R.id.etCurrentPassword);
         EditText etNewPassword = dialogView.findViewById(R.id.etNewPassword);
         etCurrentPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -196,109 +202,156 @@ public class AccountAndSecurityFragment extends Fragment {
     }
 
     // ---------------------- DELETE ACCOUNT ----------------------
-    private void handleDeleteAccount() {
+    private void promptPasswordBeforeDelete() {
         if (currentUser == null) return;
 
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Delete Account")
-                .setMessage("Are you sure you want to delete your account? This action is irreversible.")
-                .setPositiveButton("Delete", (dialog, which) -> fetchAccountTypeAndDelete())
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                .show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("Confirm Password");
+        builder.setMessage("Please enter your password to delete your account.");
+
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_confirm_password, null);
+        EditText etPassword = dialogView.findViewById(R.id.etPassword);
+        etPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(dialogView);
+
+        builder.setPositiveButton("Confirm", (dialog, which) -> {
+            String password = etPassword.getText().toString().trim();
+            if (password.isEmpty()) {
+                showSnackbar("Password required!");
+                return;
+            }
+            reauthenticateAndDelete(password);
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        builder.show();
     }
 
-    private void fetchAccountTypeAndDelete() {
-        userRef.child("accountType").get().addOnSuccessListener(snapshot -> {
-            String type = snapshot.getValue(String.class);
+    private void reauthenticateAndDelete(String password) {
+        if (currentUser == null) return;
+        AuthCredential credential = EmailAuthProvider.getCredential(currentUser.getEmail(), password);
+        currentUser.reauthenticate(credential)
+                .addOnSuccessListener(unused -> deleteUserDataAndAuth())
+                .addOnFailureListener(e -> showSnackbar("Re-auth failed: " + e.getMessage()));
+    }
+
+    private void deleteUserDataAndAuth() {
+        if (currentUser == null) return;
+        String uid = currentUser.getUid();
+        userDocRef.get().addOnSuccessListener(snapshot -> {
+            String type = snapshot.getString("accountType");
             if ("Owner".equalsIgnoreCase(type)) {
-                deleteOwnerAccount();
+                deleteOwnerAccountData();
             } else {
-                deleteUserAccount();
+                deleteNormalUserData();
             }
         });
     }
 
-    private void deleteUserAccount() {
+    private void deleteNormalUserData() {
         String uid = currentUser.getUid();
-        DatabaseReference spacesRef = FirebaseDatabase.getInstance(DB_URL).getReference("spaces");
-        DatabaseReference userBookingRef = FirebaseDatabase.getInstance(DB_URL)
-                .getReference("users").child(uid).child("booking_reference");
+        CollectionReference spacesCol = firestore.collection("spaces");
 
-        spacesRef.get().addOnSuccessListener(snapshot -> {
-            List<DatabaseReference> bookingsToDelete = new ArrayList<>();
-            for (DataSnapshot spaceSnap : snapshot.getChildren()) {
-                for (DataSnapshot booking : spaceSnap.child("bookings").getChildren()) {
-                    if (uid.equals(booking.child("userId").getValue(String.class))) {
-                        bookingsToDelete.add(booking.getRef());
-                    }
+        spacesCol.get().addOnSuccessListener(snapshot -> {
+            List<Task<Void>> deleteTasks = new ArrayList<>();
+            for (DocumentSnapshot spaceSnap : snapshot.getDocuments()) {
+                Task<Void> t = spaceSnap.getReference().collection("bookings")
+                        .whereEqualTo("userId", uid).get()
+                        .continueWithTask(task -> {
+                            List<Task<Void>> bookingDeletes = new ArrayList<>();
+                            if (task.isSuccessful() && task.getResult() != null) {
+                                for (DocumentSnapshot bookingSnap : task.getResult().getDocuments()) {
+                                    bookingDeletes.add(bookingSnap.getReference().delete());
+                                }
+                            }
+                            return Tasks.whenAll(bookingDeletes);
+                        });
+                deleteTasks.add(t);
+            }
+
+            if (username != null && !username.isEmpty()) {
+                deleteTasks.add(firestore.collection("usernames").document(username).delete());
+            }
+            deleteTasks.add(userDocRef.delete());
+
+            Tasks.whenAll(deleteTasks).addOnSuccessListener(aVoid -> deleteAuthAccount())
+                    .addOnFailureListener(e -> showSnackbar("Failed to delete user data: " + e.getMessage()));
+        });
+    }
+
+    private void deleteOwnerAccountData() {
+        userDocRef.get().addOnSuccessListener(snapshot -> {
+            Object spaceRefObj = snapshot.get("space_reference");
+            if (!(spaceRefObj instanceof Map)) {
+                deleteAuthAccount();
+                return;
+            }
+
+            Map<String, Object> spaceMap = (Map<String, Object>) spaceRefObj;
+            if (spaceMap.isEmpty()) {
+                deleteAuthAccount();
+                return;
+            }
+
+            List<Task<Void>> spaceTasks = new ArrayList<>();
+
+            for (String spaceId : spaceMap.keySet()) {
+                DocumentReference spaceRef = firestore.collection("spaces").document(spaceId);
+
+                Task<Void> deleteBookingsTask = spaceRef.collection("bookings").get()
+                        .continueWithTask(bookingsTask -> {
+                            List<Task<Void>> bookingDeletes = new ArrayList<>();
+                            if (bookingsTask.isSuccessful() && bookingsTask.getResult() != null) {
+                                for (DocumentSnapshot bookingSnap : bookingsTask.getResult().getDocuments()) {
+                                    String bookingId = bookingSnap.getId();
+                                    String userId = bookingSnap.getString("userId");
+                                    bookingDeletes.add(bookingSnap.getReference().delete());
+
+                                    if (userId != null) {
+                                        DocumentReference bookingRef = firestore
+                                                .collection("users")
+                                                .document(userId)
+                                                .collection("booking_reference")
+                                                .document(bookingId);
+                                        bookingDeletes.add(bookingRef.delete());
+                                    }
+                                }
+                            }
+                            return Tasks.whenAll(bookingDeletes);
+                        }).continueWithTask(t -> spaceRef.delete());
+
+                Task<Void> deleteSpaceRefTask = userDocRef.collection("space_reference")
+                        .document(spaceId)
+                        .delete();
+
+                spaceTasks.add(Tasks.whenAll(deleteBookingsTask, deleteSpaceRefTask));
+            }
+
+            Tasks.whenAll(spaceTasks).addOnSuccessListener(aVoid -> {
+                List<Task<Void>> finalTasks = new ArrayList<>();
+                if (username != null && !username.isEmpty()) {
+                    finalTasks.add(firestore.collection("usernames").document(username).delete());
                 }
-            }
-            deleteRefsSequentially(bookingsToDelete, () -> {
-                userBookingRef.removeValue().addOnSuccessListener(aVoid -> deleteDatabaseThenAuth(uid));
-            });
-        });
+                finalTasks.add(userDocRef.delete());
+
+                Tasks.whenAll(finalTasks).addOnSuccessListener(aVoid2 -> deleteAuthAccount())
+                        .addOnFailureListener(e -> showSnackbar("Failed final cleanup: " + e.getMessage()));
+            }).addOnFailureListener(e -> showSnackbar("Failed to delete spaces: " + e.getMessage()));
+        }).addOnFailureListener(e -> showSnackbar("Failed to load user document: " + e.getMessage()));
     }
 
-    private void deleteOwnerAccount() {
-        String uid = currentUser.getUid();
-        userRef.child("space_reference").get().addOnSuccessListener(snapshot -> {
-            List<DatabaseReference> spacesToDelete = new ArrayList<>();
-            for (DataSnapshot spaceSnap : snapshot.getChildren()) {
-                String spaceId = spaceSnap.getKey();
-                if (spaceId != null) {
-                    spacesToDelete.add(FirebaseDatabase.getInstance(DB_URL).getReference("spaces").child(spaceId));
-                }
-            }
-            deleteSpacesSequentially(spacesToDelete, () -> deleteDatabaseThenAuth(uid));
-        });
-    }
-
-    private void deleteSpacesSequentially(List<DatabaseReference> spaces, Runnable onComplete) {
-        if (spaces.isEmpty()) {
-            onComplete.run();
-            return;
-        }
-        DatabaseReference spaceRef = spaces.remove(0);
-        spaceRef.child("bookings").get().addOnSuccessListener(snapshot -> {
-            List<DatabaseReference> bookingRefs = new ArrayList<>();
-            for (DataSnapshot bookingSnap : snapshot.getChildren()) {
-                bookingRefs.add(bookingSnap.getRef());
-            }
-            deleteRefsSequentially(bookingRefs, () -> spaceRef.removeValue().addOnSuccessListener(aVoid ->
-                    deleteSpacesSequentially(spaces, onComplete)
-            ));
-        });
-    }
-
-    private void deleteRefsSequentially(List<DatabaseReference> refs, Runnable onComplete) {
-        if (refs.isEmpty()) {
-            onComplete.run();
-            return;
-        }
-        DatabaseReference ref = refs.remove(0);
-        ref.removeValue().addOnSuccessListener(aVoid -> deleteRefsSequentially(refs, onComplete))
-                .addOnFailureListener(e -> showSnackbar("Failed to delete: " + e.getMessage()));
-    }
-
-    private void deleteDatabaseThenAuth(String uid) {
-        List<Task<Void>> tasks = new ArrayList<>();
-        tasks.add(FirebaseDatabase.getInstance(DB_URL).getReference("users").child(uid).removeValue());
-        if (username != null && !username.isEmpty()) {
-            tasks.add(FirebaseDatabase.getInstance(DB_URL).getReference("usernames").child(username).removeValue());
-        }
-
-        Tasks.whenAll(tasks).addOnSuccessListener(aVoid -> deleteAuthentication())
-                .addOnFailureListener(e -> showSnackbar("Failed to delete database nodes: " + e.getMessage()));
-    }
-
-    private void deleteAuthentication() {
-        currentUser.delete().addOnSuccessListener(aVoid -> {
-            showSnackbar("Account deleted successfully");
-            Intent intent = new Intent(requireActivity(), LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            requireActivity().finish();
-        }).addOnFailureListener(e -> showSnackbar("Failed to delete auth: " + e.getMessage()));
+    private void deleteAuthAccount() {
+        if (currentUser == null) return;
+        currentUser.delete()
+                .addOnSuccessListener(aVoid -> {
+                    showSnackbar("Account deleted successfully");
+                    Intent intent = new Intent(requireActivity(), LoginActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    requireActivity().finish();
+                })
+                .addOnFailureListener(e -> showSnackbar("Failed to delete auth account: " + e.getMessage()));
     }
 
     private void showSnackbar(String msg) {

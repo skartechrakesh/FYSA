@@ -13,7 +13,7 @@
         android:title="@string/my_bookings"
         tools:ignore="UnusedAttribute" />
     <item
-        android:id="@+id/nav_settings"
+        android:id="@+id/nav_settings2"
         android:icon="@drawable/ic_preferences"
         android:iconTint="@color/textPrimary"
         android:title="@string/settings"

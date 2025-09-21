@@ -14,13 +14,14 @@ public class Booking implements Parcelable {
     private String ownerId;
     private String spaceId;
     private String spaceName;
+    private String spaceAddress; // ✅ Added field
     private String spaceType;
     private String bookingDate;
     private String status;
     private String username;
     private long createdAt;
-    private double latitude;   // ✅ New field
-    private double longitude;  // ✅ New field
+    private double latitude;
+    private double longitude;
 
     // Required empty constructor for Firebase deserialization
     public Booking() {
@@ -28,14 +29,16 @@ public class Booking implements Parcelable {
 
     // Full constructor to match all fields
     public Booking(String bookingId, String userId, String ownerId,
-                   String spaceId, String spaceName, String spaceType,
-                   String bookingDate, String status, String username,
-                   long createdAt, double latitude, double longitude) {
+                   String spaceId, String spaceName, String spaceAddress,
+                   String spaceType, String bookingDate, String status,
+                   String username, long createdAt,
+                   double latitude, double longitude) {
         this.bookingId = bookingId;
         this.userId = userId;
         this.ownerId = ownerId;
         this.spaceId = spaceId;
         this.spaceName = spaceName;
+        this.spaceAddress = spaceAddress; // ✅ Added
         this.spaceType = spaceType;
         this.bookingDate = bookingDate;
         this.status = status;
@@ -52,6 +55,7 @@ public class Booking implements Parcelable {
         ownerId = in.readString();
         spaceId = in.readString();
         spaceName = in.readString();
+        spaceAddress = in.readString(); // ✅ Added
         spaceType = in.readString();
         bookingDate = in.readString();
         status = in.readString();
@@ -68,6 +72,7 @@ public class Booking implements Parcelable {
         dest.writeString(ownerId);
         dest.writeString(spaceId);
         dest.writeString(spaceName);
+        dest.writeString(spaceAddress); // ✅ Added
         dest.writeString(spaceType);
         dest.writeString(bookingDate);
         dest.writeString(status);
@@ -133,6 +138,14 @@ public class Booking implements Parcelable {
 
     public void setSpaceName(String spaceName) {
         this.spaceName = spaceName;
+    }
+
+    public String getSpaceAddress() { // ✅ Added
+        return spaceAddress;
+    }
+
+    public void setSpaceAddress(String spaceAddress) { // ✅ Added
+        this.spaceAddress = spaceAddress;
     }
 
     public String getSpaceType() {

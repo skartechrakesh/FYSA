@@ -2,43 +2,35 @@ package com.skar.fysa;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
-/**
- * Model class representing a rental space (Hostel, PG, Room, House, Flat).
- * Stored in Firebase under: spaces/<spaceId>.
- * Each space has a "category" field for filtering.
- */
 @IgnoreExtraProperties
 public class Space implements Parcelable {
 
-    private String id;          // Firebase push key
-    private String name;        // Space name
-    private String category;    // Hostel / PG / Room / House / Flat ✅ replaces type
-    private double latitude;    // Latitude
-    private double longitude;   // Longitude
-    private String ownerId;     // UID of the owner
-    private String ownerName;   // Owner name
-    private String address;     // Address
-    private String contact;     // Contact (phone/email)
-    private String email;       // Owner email
-    private String description; // Description
-    private Boolean vacancy = true; // Vacancy status (default = true)
+    private String id;
+    private String name;
+    private String category;
+    private double latitude;
+    private double longitude;
+    private String ownerId;
+    private String ownerName;
+    private String address;
+    private String contact;
+    private String email;
+    private String description;
+    private Boolean active = true; // renamed from vacancy
 
     @Exclude
-    private Integer distanceMeters; // Calculated dynamically, not stored in Firebase
+    private Integer distanceMeters;
 
-    // --- Required empty constructor for Firebase ---
     public Space() {}
 
-    // --- Full constructor ---
     public Space(String id, String name, String category,
                  double latitude, double longitude,
                  String ownerId, String ownerName,
                  String address, String contact,
-                 String email, Boolean vacancy) {
+                 String email, Boolean active) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -49,10 +41,9 @@ public class Space implements Parcelable {
         this.address = address;
         this.contact = contact;
         this.email = email;
-        this.vacancy = vacancy != null ? vacancy : true;
+        this.active = active != null ? active : true;
     }
 
-    // --- Parcelable implementation ---
     protected Space(Parcel in) {
         id = in.readString();
         name = in.readString();
@@ -65,11 +56,9 @@ public class Space implements Parcelable {
         contact = in.readString();
         email = in.readString();
         description = in.readString();
-        byte tmpVacancy = in.readByte();
-        vacancy = tmpVacancy == 0 ? null : tmpVacancy == 1;
-        if (in.readByte() == 1) {
-            distanceMeters = in.readInt();
-        }
+        byte tmpActive = in.readByte();
+        active = tmpActive == 0 ? null : tmpActive == 1;
+        if (in.readByte() == 1) distanceMeters = in.readInt();
     }
 
     @Override
@@ -85,30 +74,21 @@ public class Space implements Parcelable {
         dest.writeString(contact);
         dest.writeString(email);
         dest.writeString(description);
-        dest.writeByte((byte) (vacancy == null ? 0 : vacancy ? 1 : 2));
+        dest.writeByte((byte) (active == null ? 0 : active ? 1 : 2));
         if (distanceMeters != null) {
             dest.writeByte((byte) 1);
             dest.writeInt(distanceMeters);
-        } else {
-            dest.writeByte((byte) 0);
-        }
+        } else dest.writeByte((byte) 0);
     }
 
     @Override
-    public int describeContents() {
-        return 0;
-    }
+    public int describeContents() { return 0; }
 
     public static final Creator<Space> CREATOR = new Creator<Space>() {
         @Override
-        public Space createFromParcel(Parcel in) {
-            return new Space(in);
-        }
-
+        public Space createFromParcel(Parcel in) { return new Space(in); }
         @Override
-        public Space[] newArray(int size) {
-            return new Space[size];
-        }
+        public Space[] newArray(int size) { return new Space[size]; }
     };
 
     // --- Getters ---
@@ -123,7 +103,7 @@ public class Space implements Parcelable {
     public String getContact() { return contact; }
     public String getEmail() { return email; }
     public String getDescription() { return description; }
-    public Boolean isVacancy() { return vacancy; }
+    public Boolean isActive() { return active; } // updated
 
     @Exclude
     public Integer getDistanceMeters() { return distanceMeters; }
@@ -140,7 +120,7 @@ public class Space implements Parcelable {
     public void setContact(String contact) { this.contact = contact; }
     public void setEmail(String email) { this.email = email; }
     public void setDescription(String description) { this.description = description; }
-    public void setVacancy(Boolean vacancy) { this.vacancy = vacancy != null ? vacancy : true; }
+    public void setActive(Boolean active) { this.active = active != null ? active : true; } // updated
 
     @Exclude
     public void setDistanceMeters(Integer distanceMeters) { this.distanceMeters = distanceMeters; }
