@@ -60,6 +60,18 @@
                 android:text=""
                 android:textColor="?attr/colorOnSurface" />
 
+            <!-- Space Features -->
+            <TextView
+                android:id="@+id/tvSpaceFeatures"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="4dp"
+                android:text=""
+                android:textColor="?attr/colorOnSurface"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                tools:ignore="HardcodedText" />
+
             <!-- Contact -->
             <TextView
                 android:id="@+id/tvContact"

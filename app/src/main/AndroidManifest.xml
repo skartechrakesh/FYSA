@@ -8,7 +8,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-feature
@@ -26,11 +25,13 @@
         android:usesCleartextTraffic="false"
         tools:node="merge"
         tools:targetApi="34">
+        <activity
+            android:name=".VerificationActivity"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-6462351900381242~6529800939" />
-
         <meta-data
             android:name="osmdroid.basePath"
             android:value="osmdroid" />
@@ -43,14 +44,13 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".MainActivity"
             android:exported="false" />
-
         <activity
             android:name=".RegisterActivity"
             android:exported="false"
@@ -59,7 +59,6 @@
             android:name=".LoginActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
         <activity
             android:name=".OwnerDashboardActivity"
             android:exported="false" />

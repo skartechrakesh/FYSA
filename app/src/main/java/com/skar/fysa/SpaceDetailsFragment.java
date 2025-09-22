@@ -20,16 +20,14 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Objects;
 
 public class SpaceDetailsFragment extends Fragment {
 
-    private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory;
+    private TextView tvName, tvOwnerName, tvAddress, tvContact, tvDistance, tvCategory, tvSpaceFeatures;
     private Button btnDirections, btnBook;
     private Space space;
     private String spaceId, spaceName, ownerId;
@@ -49,9 +47,11 @@ public class SpaceDetailsFragment extends Fragment {
         tvAddress = view.findViewById(R.id.tvAddress);
         tvContact = view.findViewById(R.id.tvContact);
         tvDistance = view.findViewById(R.id.tvDistance);
+        tvCategory = view.findViewById(R.id.tvCategory);
+        tvSpaceFeatures = view.findViewById(R.id.tvSpaceFeatures);
+
         btnDirections = view.findViewById(R.id.btnDirections);
         btnBook = view.findViewById(R.id.btnBook);
-        tvCategory = view.findViewById(R.id.tvCategory);
 
         firestore = FirebaseFirestore.getInstance();
 
@@ -79,6 +79,22 @@ public class SpaceDetailsFragment extends Fragment {
         tvAddress.setText("Address: " + space.getAddress());
         tvContact.setText("Contact: " + space.getContact());
         tvCategory.setText("Category: " + space.getCategory());
+
+        // --- Display space features ---
+        // --- Display space features ---
+        String features = space.getSpaceFeatures();
+        if (features != null && !features.isEmpty()) {
+            // Split by comma, trim each feature, then join with newline + tab
+            String[] featureArray = features.split(",");
+            StringBuilder formattedFeatures = new StringBuilder();
+            for (String f : featureArray) {
+                formattedFeatures.append("\n\t").append(f.trim());
+            }
+            tvSpaceFeatures.setText("Features:" + formattedFeatures.toString());
+        } else {
+            tvSpaceFeatures.setText("Features: N/A");
+        }
+
 
         Integer distance = space.getDistanceMeters();
         if (distance != null && distance > 0) {

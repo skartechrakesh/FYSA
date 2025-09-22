@@ -116,6 +116,30 @@
                 tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Space Features -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/spaceFeaturesLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Space Features (Optional)"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/linkText"
+            app:hintTextColor="@color/textSecondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputSpaceFeatures"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:inputType="textMultiLine"
+                android:minLines="2"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="#546E7A"
+                tools:ignore="TextContrastCheck,VisualLintTextFieldSize" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Map Section -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"

@@ -53,12 +53,12 @@ public class EditSpaceFragment extends Fragment {
 
     private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
 
-    private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
+    private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress, inputSpaceFeatures;
     private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;
     private FloatingActionButton btnMyLocation;
     private ImageView crosshair;
     private MaterialButton btnSubmit;
-    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout;
+    private TextInputLayout eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eFeaturesLayout, eCategoryLayout, eVacancyLayout;
     private MapView mapView;
 
     private final ActivityResultLauncher<String> locationPermissionLauncher =
@@ -74,6 +74,7 @@ public class EditSpaceFragment extends Fragment {
     private InterstitialAd mInterstitialAd;
     private OnSpaceUpdatedListener onSpaceUpdatedListener;
 
+    // ---------- Utility: Set stroke colors for TextInputLayouts ----------
     private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
         if (context == null || inputs == null) return;
 
@@ -134,7 +135,7 @@ public class EditSpaceFragment extends Fragment {
         fillFormWithData();
         initMap();
         handleBackPress();
-        setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eCategoryLayout, eVacancyLayout);
+        setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eFeaturesLayout, eCategoryLayout, eVacancyLayout);
         loadInterstitialAd();
 
         return view;
@@ -145,16 +146,19 @@ public class EditSpaceFragment extends Fragment {
         inputOwnerName = view.findViewById(R.id.inputOwnerName);
         inputContact = view.findViewById(R.id.inputContact);
         inputAddress = view.findViewById(R.id.inputAddress);
+        inputSpaceFeatures = view.findViewById(R.id.inputSpaceFeatures);
         spinnerCategory = view.findViewById(R.id.spinnerCategory);
         spinnerVacancy = view.findViewById(R.id.spinnerVacancy);
         btnMyLocation = view.findViewById(R.id.btnMyLocation);
         crosshair = view.findViewById(R.id.crosshair);
         btnSubmit = view.findViewById(R.id.btnSubmit);
         mapView = view.findViewById(R.id.mapView);
+
         eNameLayout = view.findViewById(R.id.eNameLayout);
         eOwnerNameLayout = view.findViewById(R.id.eOwnerNameLayout);
         eContactLayout = view.findViewById(R.id.eContactLayout);
         eAddressLayout = view.findViewById(R.id.eAddressLayout);
+        eFeaturesLayout = view.findViewById(R.id.eFeaturesLayout);
         eCategoryLayout = view.findViewById(R.id.eCategoryLayout);
         eVacancyLayout = view.findViewById(R.id.eVacancyLayout);
     }
@@ -182,7 +186,6 @@ public class EditSpaceFragment extends Fragment {
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
-
         btnSubmit.setOnClickListener(v -> checkUniqueNameAndShowAd());
 
         mapView.setOnTouchListener((v, event) -> {
@@ -209,6 +212,12 @@ public class EditSpaceFragment extends Fragment {
         inputOwnerName.setText(space.getOwnerName());
         inputContact.setText(space.getContact());
         inputAddress.setText(space.getAddress());
+        inputSpaceFeatures.setText(space.getSpaceFeatures());
+        if (space.getSpaceFeatures() != null) {
+            inputSpaceFeatures.setText(space.getSpaceFeatures());
+        } else {
+            inputSpaceFeatures.setText("");
+        }
     }
 
     private void initMap() {
@@ -264,8 +273,8 @@ public class EditSpaceFragment extends Fragment {
         }
 
         spacesRef
-                .whereEqualTo("ownerId", currentUserId)  // only current user's spaces
-                .whereEqualTo("name", name)              // check the name
+                .whereEqualTo("ownerId", currentUserId)
+                .whereEqualTo("name", name)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     boolean exists = false;
@@ -316,6 +325,7 @@ public class EditSpaceFragment extends Fragment {
         String ownerName = inputOwnerName.getText() != null ? inputOwnerName.getText().toString().trim() : "";
         String contact = inputContact.getText() != null ? inputContact.getText().toString().trim() : "";
         String address = inputAddress.getText() != null ? inputAddress.getText().toString().trim() : "";
+        String features = inputSpaceFeatures.getText() != null ? inputSpaceFeatures.getText().toString().trim() : "";
         String category = spinnerCategory.getText() != null ? spinnerCategory.getText().toString() : "";
         String vacancyText = spinnerVacancy.getText() != null ? spinnerVacancy.getText().toString() : "No";
 
@@ -334,6 +344,7 @@ public class EditSpaceFragment extends Fragment {
         spaceUpdates.put("ownerName", ownerName);
         spaceUpdates.put("contact", contact);
         spaceUpdates.put("address", address);
+        spaceUpdates.put("spaceFeatures", features);
         spaceUpdates.put("latitude", center.getLatitude());
         spaceUpdates.put("longitude", center.getLongitude());
         spaceUpdates.put("category", category);
@@ -342,14 +353,14 @@ public class EditSpaceFragment extends Fragment {
 
         spaceDocRef.update(spaceUpdates)
                 .addOnSuccessListener(unused ->
-                        updateBookingsAfterSpaceEdit(name, ownerName, contact, address, category, center, isActive)
+                        updateBookingsAfterSpaceEdit(name, ownerName, contact, address, features, category, center, isActive)
                 )
                 .addOnFailureListener(e -> Snackbar.make(requireView(),
                         "Space update failed: " + e.getMessage(),
                         Snackbar.LENGTH_LONG).show());
     }
 
-    private void updateBookingsAfterSpaceEdit(String name, String ownerName, String contact, String address,
+    private void updateBookingsAfterSpaceEdit(String name, String ownerName, String contact, String address, String features,
                                               String category, GeoPoint center, boolean isActive) {
 
         spacesRef.document(space.getId())
@@ -384,6 +395,7 @@ public class EditSpaceFragment extends Fragment {
                     space.setOwnerName(ownerName);
                     space.setContact(contact);
                     space.setAddress(address);
+                    space.setSpaceFeatures(features);
                     space.setCategory(category);
                     space.setActive(isActive);
 

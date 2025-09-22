@@ -19,7 +19,8 @@ public class Space implements Parcelable {
     private String contact;
     private String email;
     private String description;
-    private Boolean active = true; // renamed from vacancy
+    private String spaceFeatures; // NEW
+    private Boolean active = true;
 
     @Exclude
     private Integer distanceMeters;
@@ -30,7 +31,8 @@ public class Space implements Parcelable {
                  double latitude, double longitude,
                  String ownerId, String ownerName,
                  String address, String contact,
-                 String email, Boolean active) {
+                 String email, Boolean active,
+                 String spaceFeatures) { // NEW
         this.id = id;
         this.name = name;
         this.category = category;
@@ -42,6 +44,7 @@ public class Space implements Parcelable {
         this.contact = contact;
         this.email = email;
         this.active = active != null ? active : true;
+        this.spaceFeatures = spaceFeatures; // NEW
     }
 
     protected Space(Parcel in) {
@@ -56,6 +59,7 @@ public class Space implements Parcelable {
         contact = in.readString();
         email = in.readString();
         description = in.readString();
+        spaceFeatures = in.readString(); // NEW
         byte tmpActive = in.readByte();
         active = tmpActive == 0 ? null : tmpActive == 1;
         if (in.readByte() == 1) distanceMeters = in.readInt();
@@ -74,6 +78,7 @@ public class Space implements Parcelable {
         dest.writeString(contact);
         dest.writeString(email);
         dest.writeString(description);
+        dest.writeString(spaceFeatures); // NEW
         dest.writeByte((byte) (active == null ? 0 : active ? 1 : 2));
         if (distanceMeters != null) {
             dest.writeByte((byte) 1);
@@ -103,7 +108,8 @@ public class Space implements Parcelable {
     public String getContact() { return contact; }
     public String getEmail() { return email; }
     public String getDescription() { return description; }
-    public Boolean isActive() { return active; } // updated
+    public String getSpaceFeatures() { return spaceFeatures; } // NEW
+    public Boolean isActive() { return active; }
 
     @Exclude
     public Integer getDistanceMeters() { return distanceMeters; }
@@ -120,7 +126,8 @@ public class Space implements Parcelable {
     public void setContact(String contact) { this.contact = contact; }
     public void setEmail(String email) { this.email = email; }
     public void setDescription(String description) { this.description = description; }
-    public void setActive(Boolean active) { this.active = active != null ? active : true; } // updated
+    public void setSpaceFeatures(String spaceFeatures) { this.spaceFeatures = spaceFeatures; } // NEW
+    public void setActive(Boolean active) { this.active = active != null ? active : true; }
 
     @Exclude
     public void setDistanceMeters(Integer distanceMeters) { this.distanceMeters = distanceMeters; }

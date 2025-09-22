@@ -35,9 +35,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -51,8 +49,8 @@ import java.util.Objects;
 public class SpaceFormFragment extends Fragment {
 
     private final Handler adHandler = new Handler();
-    private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress;
-    private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout;
+    private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress, inputSpaceFeatures;
+    private TextInputLayout nameLayout, ownerNameLayout, contactLayout, addressLayout, spaceFeaturesLayout;
     private Button btnSubmit;
     private TextView txtCategory;
     private FloatingActionButton btnMyLocation;
@@ -118,7 +116,7 @@ public class SpaceFormFragment extends Fragment {
         requestLocationPermission();
 
         txtCategory.setText("Category: " + category);
-        setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout);
+        setupTextInputStrokes(requireContext(), nameLayout, ownerNameLayout, contactLayout, addressLayout, spaceFeaturesLayout);
 
         loadInterstitialAd();
         loadDefaultUserData();
@@ -143,11 +141,13 @@ public class SpaceFormFragment extends Fragment {
         inputOwnerName = view.findViewById(R.id.inputOwnerName);
         inputContact = view.findViewById(R.id.inputContact);
         inputAddress = view.findViewById(R.id.inputAddress);
+        inputSpaceFeatures = view.findViewById(R.id.inputSpaceFeatures);
 
         nameLayout = view.findViewById(R.id.nameLayout);
         ownerNameLayout = view.findViewById(R.id.ownerNameLayout);
         contactLayout = view.findViewById(R.id.contactLayout);
         addressLayout = view.findViewById(R.id.addressLayout);
+        spaceFeaturesLayout = view.findViewById(R.id.spaceFeaturesLayout);
 
         btnSubmit = view.findViewById(R.id.btnSubmit);
         txtCategory = view.findViewById(R.id.txtCategory);
@@ -228,6 +228,7 @@ public class SpaceFormFragment extends Fragment {
         String ownerName = Objects.requireNonNull(inputOwnerName.getText()).toString().trim();
         String contact = Objects.requireNonNull(inputContact.getText()).toString().trim();
         String address = Objects.requireNonNull(inputAddress.getText()).toString().trim();
+        String features = Objects.requireNonNull(inputSpaceFeatures.getText()).toString().trim();
 
         if (name.isEmpty() || ownerName.isEmpty() || contact.isEmpty() || address.isEmpty()) {
             Snackbar.make(fragmentView, "Please fill all fields", Snackbar.LENGTH_SHORT).show();
@@ -240,55 +241,55 @@ public class SpaceFormFragment extends Fragment {
             return;
         }
 
-        checkForExistingSpace(name, ownerName, contact, address, center);
+        checkForExistingSpace(name, ownerName, contact, address, features, center);
     }
 
-    private void checkForExistingSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
+    private void checkForExistingSpace(String name, String ownerName, String contact, String address, String features, GeoPoint center) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
         String uid = user.getUid();
 
         firestore.collection("spaces")
-                .whereEqualTo("ownerId", uid)   // only current user's spaces
-                .whereEqualTo("name", name)     // check for same name
+                .whereEqualTo("ownerId", uid)
+                .whereEqualTo("name", name)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     if (!querySnapshot.isEmpty()) {
                         Snackbar.make(fragmentView, "Space name already exists for your account.", Snackbar.LENGTH_LONG).show();
                     } else {
-                        showAdAndSaveSpace(name, ownerName, contact, address, center);
+                        showAdAndSaveSpace(name, ownerName, contact, address, features, center);
                     }
                 })
                 .addOnFailureListener(e -> {
                     Snackbar.make(fragmentView, "Failed to check space name. Saving anyway.", Snackbar.LENGTH_SHORT).show();
-                    showAdAndSaveSpace(name, ownerName, contact, address, center);
+                    showAdAndSaveSpace(name, ownerName, contact, address, features, center);
                 });
     }
 
-    private void showAdAndSaveSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
+    private void showAdAndSaveSpace(String name, String ownerName, String contact, String address, String features, GeoPoint center) {
         adHandler.postDelayed(() -> {
             if (mInterstitialAd != null) {
                 mInterstitialAd.show(requireActivity());
                 mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
                     @Override
                     public void onAdDismissedFullScreenContent() {
-                        saveNewSpace(name, ownerName, contact, address, center);
+                        saveNewSpace(name, ownerName, contact, address, features, center);
                         loadInterstitialAd();
                     }
 
                     @Override
                     public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
-                        saveNewSpace(name, ownerName, contact, address, center);
+                        saveNewSpace(name, ownerName, contact, address, features, center);
                     }
                 });
             } else {
-                saveNewSpace(name, ownerName, contact, address, center);
+                saveNewSpace(name, ownerName, contact, address, features, center);
             }
         }, 1000);
     }
 
-    private void saveNewSpace(String name, String ownerName, String contact, String address, GeoPoint center) {
+    private void saveNewSpace(String name, String ownerName, String contact, String address, String features, GeoPoint center) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
@@ -307,6 +308,7 @@ public class SpaceFormFragment extends Fragment {
         space.put("address", address);
         space.put("contact", contact);
         space.put("email", email);
+        space.put("spaceFeatures", features);  // <-- added
         space.put("active", true);
 
         firestore.collection("spaces").document(spaceId).set(space)

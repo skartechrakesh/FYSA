@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="?android:attr/colorBackground">
+
+    <!-- Info Text -->
+    <TextView
+        android:id="@+id/tvEmailMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="A verification email has been sent to your address."
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
+        android:gravity="center"
+        android:padding="16dp" />
+
+    <!-- Resend Email -->
+    <Button
+        android:id="@+id/btnResend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Resend Verification Email"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="?attr/colorSecondary"
+        android:textColor="?android:attr/colorBackground"/>
+
+    <!-- Continue -->
+    <Button
+        android:id="@+id/btnContinue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Continue"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="?android:attr/colorBackground"/>
+
+    <!-- Logout -->
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="?attr/colorError"
+        android:textColor="?android:attr/colorBackground"/>
+
+    <!-- Progress -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:visibility="gone"/>
+</LinearLayout>
