@@ -51,7 +51,7 @@ import java.util.Objects;
 
 public class EditSpaceFragment extends Fragment {
 
-    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Test Ad
+    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Original Unit ID: "ca-app-pub-6462351900381242/1252944593"
 
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress, inputSpaceFeatures;
     private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;

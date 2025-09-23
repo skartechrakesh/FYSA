@@ -101,7 +101,7 @@ public class AccountAndSecurityFragment extends Fragment {
     private void loadInterstitialAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712",
+                "ca-app-pub-3940256099942544/1033173712", // Original Unit ID: "ca-app-pub-6462351900381242/5824644804"
                 adRequest,
                 new InterstitialAdLoadCallback() {
                     @Override

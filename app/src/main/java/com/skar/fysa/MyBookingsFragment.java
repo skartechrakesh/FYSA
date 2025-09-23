@@ -36,7 +36,7 @@ import java.util.Locale;
 
 public class MyBookingsFragment extends Fragment {
 
-    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // Test
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // Original Unit ID: "ca-app-pub-6462351900381242/2376354383"
     private final List<Booking> bookingList = new ArrayList<>();
     private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerBookings;
