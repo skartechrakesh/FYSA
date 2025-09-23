@@ -28,7 +28,6 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -94,14 +93,14 @@ public class MyBookingsFragment extends Fragment {
                         return;
                     }
 
-                    final int[] processedCount = {0}; // Track processed spaces
+                    final int[] processedCount = {0};
 
                     for (DocumentSnapshot spaceDoc : spaceDocs) {
                         String spaceId = spaceDoc.getId();
                         String ownerId = spaceDoc.getString("ownerId");
                         String spaceName = spaceDoc.getString("name");
                         String category = spaceDoc.getString("category");
-                        String spaceAddress = spaceDoc.getString("address"); // ✅ fetch address
+                        String spaceAddress = spaceDoc.getString("address");
 
                         CollectionReference bookingsRef = firestore.collection("spaces")
                                 .document(spaceId)
@@ -124,7 +123,7 @@ public class MyBookingsFragment extends Fragment {
                                                     ownerId,
                                                     spaceId,
                                                     spaceName,
-                                                    spaceAddress, // ✅ pass address
+                                                    spaceAddress,
                                                     category,
                                                     bookingData.getBookingDate(),
                                                     bookingData.getStatus(),
@@ -139,7 +138,6 @@ public class MyBookingsFragment extends Fragment {
 
                                     processedCount[0]++;
                                     if (processedCount[0] == spaceDocs.size()) {
-                                        // All spaces processed
                                         bookingList.sort((b1, b2) -> Long.compare(b2.getCreatedAt(), b1.getCreatedAt()));
                                         adapter.submitList(new ArrayList<>(bookingList));
                                         swipeRefreshLayout.setRefreshing(false);
@@ -151,12 +149,7 @@ public class MyBookingsFragment extends Fragment {
                                 })
                                 .addOnFailureListener(e -> {
                                     processedCount[0]++;
-                                    if (processedCount[0] == spaceDocs.size()) {
-                                        swipeRefreshLayout.setRefreshing(false);
-                                        if (bookingList.isEmpty()) {
-                                            Snackbar.make(requireView(), "No bookings found", Snackbar.LENGTH_SHORT).show();
-                                        }
-                                    }
+                                    if (processedCount[0] == spaceDocs.size()) swipeRefreshLayout.setRefreshing(false);
                                     Snackbar.make(requireView(), "Failed to load bookings: " + e.getMessage(),
                                             Snackbar.LENGTH_LONG).show();
                                 });
@@ -180,10 +173,9 @@ public class MyBookingsFragment extends Fragment {
                 .document(booking.getBookingId())
                 .delete()
                 .addOnSuccessListener(aVoid -> {
-                    // Remove booking_reference from user document map
                     firestore.collection("users")
                             .document(currentUserId)
-                            .update("booking_reference." + booking.getBookingId(), FieldValue.delete())
+                            .update("booking_reference." + booking.getBookingId(), com.google.firebase.firestore.FieldValue.delete())
                             .addOnSuccessListener(aVoid1 -> {
                                 bookingList.remove(booking);
                                 adapter.submitList(new ArrayList<>(bookingList));
@@ -256,7 +248,6 @@ public class MyBookingsFragment extends Fragment {
     }
 
     // ---------------------- INNER BOOKING ADAPTER ----------------------
-
     private class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingViewHolder> {
 
         private final List<Booking> items = new ArrayList<>();
@@ -287,33 +278,42 @@ public class MyBookingsFragment extends Fragment {
 
         private class BookingViewHolder extends RecyclerView.ViewHolder {
             TextView tvSpaceName, tvSpaceAddress, tvSpaceType, tvDate, tvStatus, tvCancel;
-            Button btnDirections;
+            Button btnDirections, btnDetails;
 
             BookingViewHolder(@NonNull View itemView) {
                 super(itemView);
                 tvSpaceName = itemView.findViewById(R.id.tvBookingName);
-                tvSpaceAddress = itemView.findViewById(R.id.tvBookingAddress); // ✅ bind address view
+                tvSpaceAddress = itemView.findViewById(R.id.tvBookingAddress);
                 tvSpaceType = itemView.findViewById(R.id.tvBookingType);
                 tvDate = itemView.findViewById(R.id.tvBookingDate);
                 tvStatus = itemView.findViewById(R.id.tvBookingStatus);
                 tvCancel = itemView.findViewById(R.id.btnAction);
                 btnDirections = itemView.findViewById(R.id.btnDirections);
+                btnDetails = itemView.findViewById(R.id.btnDetails); // New button
             }
 
             void bind(Booking booking) {
                 tvSpaceName.setText(booking.getSpaceName());
-                tvSpaceAddress.setText(booking.getSpaceAddress()); // ✅ set address
+                tvSpaceAddress.setText(booking.getSpaceAddress());
                 tvSpaceType.setText(booking.getSpaceType());
                 tvDate.setText(booking.getBookingDate());
                 tvStatus.setText(booking.getStatus());
 
-                if (tvCancel != null) {
-                    tvCancel.setOnClickListener(v -> cancelBooking(booking));
-                }
+                tvCancel.setOnClickListener(v -> cancelBooking(booking));
 
-                if (btnDirections != null) {
-                    btnDirections.setOnClickListener(v -> getDirections(booking.getLatitude(), booking.getLongitude()));
-                }
+                btnDirections.setOnClickListener(v -> getDirections(booking.getLatitude(), booking.getLongitude()));
+
+                btnDetails.setOnClickListener(v -> {
+                    SpaceDetailsFragment fragment = new SpaceDetailsFragment();
+                    Bundle args = new Bundle();
+                    args.putString("spaceId", booking.getSpaceId()); // Pass spaceId
+                    fragment.setArguments(args);
+                    requireActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragmentContainer, fragment)
+                            .addToBackStack(null)
+                            .commit();
+                });
             }
         }
     }

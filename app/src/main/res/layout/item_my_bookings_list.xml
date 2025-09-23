@@ -15,7 +15,7 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <!-- Booking Address (newly added) -->
+    <!-- Booking Address -->
     <TextView
         android:id="@+id/tvBookingAddress"
         android:layout_width="wrap_content"
@@ -59,13 +59,24 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- Details Button -->
+        <Button
+            android:id="@+id/btnDetails"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="@android:color/holo_blue_light"
+            android:text="Details"
+            android:textColor="@color/textPrimary" />
+
         <!-- Cancel Visit Button -->
         <Button
             android:id="@+id/btnAction"
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="10dp"
             android:backgroundTint="?attr/colorSecondary"
             android:text="@string/cancel_visit"
             android:textColor="@color/textPrimary" />
@@ -76,8 +87,10 @@
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
             android:backgroundTint="?attr/colorSuccess"
             android:text="Open in Maps"
             android:textColor="@color/textPrimary" />
+
     </LinearLayout>
 </LinearLayout>

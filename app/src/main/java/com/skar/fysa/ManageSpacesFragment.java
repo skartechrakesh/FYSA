@@ -83,41 +83,63 @@ public class ManageSpacesFragment extends Fragment {
     private void loadSpacesInBatches(LayoutInflater inflater, List<String> spaceIds, int startIndex) {
         int endIndex = Math.min(startIndex + BATCH_SIZE, spaceIds.size());
 
+        // Remove existing "Load More"
+        View existingLoadMore = spacesListContainer.findViewWithTag("load_more_link");
+        if (existingLoadMore != null) spacesListContainer.removeView(existingLoadMore);
+
+        List<Space> spacesToAdd = new ArrayList<>();
+        final int[] loadedCount = {0};
+
         for (int i = startIndex; i < endIndex; i++) {
             String spaceId = spaceIds.get(i);
-            firestore.collection("spaces")
-                    .document(spaceId)
-                    .get()
+            firestore.collection("spaces").document(spaceId).get()
                     .addOnSuccessListener(doc -> {
                         if (doc.exists()) {
                             Space space = doc.toObject(Space.class);
                             if (space != null) {
                                 space.setId(doc.getId());
-                                addSpaceRow(inflater, space);
+                                spacesToAdd.add(space);
                             }
                         }
+                        loadedCount[0]++;
+                        if (loadedCount[0] == endIndex - startIndex) {
+                            // Sort spaces alphabetically by category
+                            spacesToAdd.sort((s1, s2) -> s1.getCategory().compareToIgnoreCase(s2.getCategory()));
+                            for (Space s : spacesToAdd) addSpaceRow(inflater, s);
+
+                            // Add "Load More" at the end
+                            if (endIndex < spaceIds.size()) addLoadMoreLink(inflater, spaceIds, endIndex);
+                        }
                     })
-                    .addOnFailureListener(e ->
-                            showSnackbar(spacesListContainer, "Failed to load space: " + e.getMessage()));
+                    .addOnFailureListener(e -> {
+                        loadedCount[0]++;
+                        if (loadedCount[0] == endIndex - startIndex) {
+                            if (!spacesToAdd.isEmpty()) {
+                                spacesToAdd.sort((s1, s2) -> s1.getCategory().compareToIgnoreCase(s2.getCategory()));
+                                for (Space s : spacesToAdd) addSpaceRow(inflater, s);
+                            }
+                            if (endIndex < spaceIds.size()) addLoadMoreLink(inflater, spaceIds, endIndex);
+                        }
+                    });
         }
+    }
 
-        if (endIndex < spaceIds.size()) {
-            TextView loadMore = new TextView(requireContext());
-            loadMore.setText("Load More");
-            loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
-            loadMore.setTextSize(16f);
-            loadMore.setPadding(0, 24, 0, 24);
-            loadMore.setPaintFlags(loadMore.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
-            loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+    private void addLoadMoreLink(LayoutInflater inflater, List<String> spaceIds, int nextStart) {
+        TextView loadMore = new TextView(requireContext());
+        loadMore.setTag("load_more_link");
+        loadMore.setText("Load More");
+        loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
+        loadMore.setTextSize(16f);
+        loadMore.setPadding(0, 24, 0, 24);
+        loadMore.setPaintFlags(loadMore.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
-            int nextStart = endIndex;
-            loadMore.setOnClickListener(v -> {
-                spacesListContainer.removeView(v);
-                loadSpacesInBatches(inflater, spaceIds, nextStart);
-            });
+        loadMore.setOnClickListener(v -> {
+            spacesListContainer.removeView(v);
+            loadSpacesInBatches(inflater, spaceIds, nextStart);
+        });
 
-            spacesListContainer.addView(loadMore);
-        }
+        spacesListContainer.addView(loadMore);
     }
 
     private void addSpaceRow(LayoutInflater inflater, Space space) {

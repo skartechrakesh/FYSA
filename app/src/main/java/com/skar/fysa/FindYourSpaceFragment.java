@@ -32,6 +32,7 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -43,8 +44,10 @@ import java.util.List;
 public class FindYourSpaceFragment extends Fragment {
 
     private static final double MAX_DISTANCE_METERS = 5000;
+    private static final int PAGE_SIZE = 10; // Pagination size
     private static final String TAG = "FindYourSpaceFragment";
     private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"; // test ad
+
     private final List<Space> spaceList = new ArrayList<>();
 
     private RecyclerView recyclerView;
@@ -55,8 +58,12 @@ public class FindYourSpaceFragment extends Fragment {
     private NativeAdView nativeAdView;
     private NativeAd loadedNativeAd;
     private String selectedCategory = null;
-    private FusedLocationProviderClient fusedLocationClient;
 
+    private boolean isLoading = false;
+    private boolean isLastPage = false;
+    private DocumentSnapshot lastVisible = null;
+
+    private FusedLocationProviderClient fusedLocationClient;
     private FirebaseFirestore firestore;
 
     private final ActivityResultLauncher<String[]> permissionLauncher =
@@ -65,7 +72,7 @@ public class FindYourSpaceFragment extends Fragment {
                 Boolean coarse = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
 
                 if (Boolean.TRUE.equals(fine) || Boolean.TRUE.equals(coarse)) {
-                    fetchUserLocationAndThenSpaces();
+                    fetchUserLocationAndThenSpaces(true);
                 } else {
                     Snackbar.make(requireView(), "Location permission denied", Snackbar.LENGTH_SHORT).show();
                 }
@@ -110,9 +117,24 @@ public class FindYourSpaceFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
+        // Pagination scroll listener
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                super.onScrolled(rv, dx, dy);
+                LinearLayoutManager lm = (LinearLayoutManager) rv.getLayoutManager();
+                if (!isLoading && !isLastPage && lm != null &&
+                        lm.findLastVisibleItemPosition() >= spaceList.size() - 2) {
+                    loadMoreSpaces();
+                }
+            }
+        });
+
         swipeRefresh.setOnRefreshListener(() -> {
             if (selectedCategory != null) {
-                fetchUserLocationAndThenSpaces();
+                lastVisible = null;
+                isLastPage = false;
+                fetchUserLocationAndThenSpaces(true);
             } else {
                 swipeRefresh.setRefreshing(false);
                 Snackbar.make(requireView(), "Please select a category first", Snackbar.LENGTH_SHORT).show();
@@ -124,8 +146,14 @@ public class FindYourSpaceFragment extends Fragment {
             TextView clicked = (TextView) v;
             clicked.setSelected(true);
             selectedCategory = clicked.getText().toString();
+
             spaceList.clear();
-            fetchUserLocationAndThenSpaces();
+            adapter.submitList(new ArrayList<>(spaceList));
+
+            lastVisible = null;
+            isLastPage = false;
+
+            fetchUserLocationAndThenSpaces(true);
         };
 
         btnHostel.setOnClickListener(filterListener);
@@ -144,7 +172,6 @@ public class FindYourSpaceFragment extends Fragment {
                 spaceList.addAll(savedSpaces);
                 adapter.submitList(new ArrayList<>(spaceList));
             }
-            if (selectedCategory != null) fetchUserLocationAndThenSpaces();
         }
 
         return view;
@@ -161,10 +188,12 @@ public class FindYourSpaceFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (selectedCategory != null) fetchUserLocationAndThenSpaces();
+        if (selectedCategory != null && spaceList.isEmpty()) {
+            fetchUserLocationAndThenSpaces(true);
+        }
     }
 
-    private void fetchUserLocationAndThenSpaces() {
+    private void fetchUserLocationAndThenSpaces(boolean isFirstPage) {
         if (ActivityCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(requireContext(),
@@ -180,35 +209,60 @@ public class FindYourSpaceFragment extends Fragment {
                 .addOnSuccessListener(location -> {
                     if (location != null) userLocation = location;
                     else fusedLocationClient.getLastLocation().addOnSuccessListener(last -> userLocation = last);
-                    loadNearbySpacesFromFirestore();
+                    loadNearbySpacesFromFirestore(isFirstPage);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to get location: " + e.getMessage());
-                    loadNearbySpacesFromFirestore();
+                    loadNearbySpacesFromFirestore(isFirstPage);
                 });
     }
 
-    private void loadNearbySpacesFromFirestore() {
-        swipeRefresh.setRefreshing(true);
-        spaceList.clear();
+    private void loadNearbySpacesFromFirestore(boolean isFirstPage) {
+        if (selectedCategory == null) {
+            swipeRefresh.setRefreshing(false);
+            return;
+        }
 
-        firestore.collection("spaces")
+        swipeRefresh.setRefreshing(true);
+        isLoading = true;
+
+        var query = firestore.collection("spaces")
                 .whereEqualTo("active", true)
-                .get()
-                .addOnSuccessListener(this::processSpaces)
+                .whereEqualTo("category", selectedCategory)
+                .limit(PAGE_SIZE);
+
+        if (lastVisible != null && !isFirstPage) {
+            query = query.startAfter(lastVisible);
+        }
+
+        query.get()
+                .addOnSuccessListener(snapshots -> processSpaces(snapshots, isFirstPage))
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Firestore error: " + e.getMessage());
                     swipeRefresh.setRefreshing(false);
+                    isLoading = false;
                 });
     }
 
-    private void processSpaces(QuerySnapshot snapshots) {
+    private void loadMoreSpaces() {
+        if (lastVisible == null || isLastPage) return;
+        loadNearbySpacesFromFirestore(false);
+    }
+
+    private void processSpaces(QuerySnapshot snapshots, boolean isFirstPage) {
+        if (isFirstPage) spaceList.clear();
+
+        if (snapshots == null || snapshots.isEmpty()) {
+            adapter.submitList(new ArrayList<>(spaceList));
+            isLastPage = true;
+            swipeRefresh.setRefreshing(false);
+            isLoading = false;
+            return;
+        }
+
         for (QueryDocumentSnapshot doc : snapshots) {
             Space space = doc.toObject(Space.class);
             space.setId(doc.getId());
-
-            if (selectedCategory != null && !selectedCategory.equalsIgnoreCase(space.getCategory()))
-                continue;
 
             if (userLocation != null) {
                 float[] results = new float[1];
@@ -229,6 +283,8 @@ public class FindYourSpaceFragment extends Fragment {
             }
         }
 
+        lastVisible = snapshots.getDocuments().get(snapshots.size() - 1);
+
         // Sort by distance
         spaceList.sort(Comparator.comparingInt(s ->
                 (s.getDistanceMeters() != null && s.getDistanceMeters() >= 0)
@@ -236,7 +292,11 @@ public class FindYourSpaceFragment extends Fragment {
                         : Integer.MAX_VALUE));
 
         adapter.submitList(new ArrayList<>(spaceList));
+
+        if (snapshots.size() < PAGE_SIZE) isLastPage = true;
+
         swipeRefresh.setRefreshing(false);
+        isLoading = false;
 
         if (spaceList.isEmpty())
             Snackbar.make(requireView(), "No nearby spaces found", Snackbar.LENGTH_SHORT).show();

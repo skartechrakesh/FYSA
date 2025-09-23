@@ -83,15 +83,13 @@ public class BookingsOverviewFragment extends Fragment {
                 .get()
                 .addOnSuccessListener(spacesSnapshot -> {
                     Map<Integer, Integer> monthlyCounts = new HashMap<>();
-
                     ArrayList<DocumentSnapshot> bookingDocs = new ArrayList<>();
 
                     for (DocumentSnapshot spaceSnap : spacesSnapshot.getDocuments()) {
                         String ownerId = spaceSnap.getString("ownerId");
                         Query bookingsQuery = firestore.collection("spaces")
                                 .document(spaceSnap.getId())
-                                .collection("bookings")
-                                .orderBy("bookingDate", Query.Direction.DESCENDING);
+                                .collection("bookings");
 
                         bookingsQuery.get().addOnSuccessListener(bookingsSnapshot -> {
                             for (DocumentSnapshot bookingSnap : bookingsSnapshot.getDocuments()) {
@@ -104,24 +102,23 @@ public class BookingsOverviewFragment extends Fragment {
                                 if (isOwner || isUserBooking) {
                                     bookingDocs.add(bookingSnap);
 
+                                    // For bar chart, count by month using bookingDate
                                     try {
                                         Calendar cal = Calendar.getInstance();
                                         cal.setTime(sdf.parse(booking.getBookingDate()));
                                         int month = cal.get(Calendar.MONTH);
                                         monthlyCounts.put(month, monthlyCounts.getOrDefault(month, 0) + 1);
-                                    } catch (ParseException ignored) {
-                                    }
+                                    } catch (ParseException ignored) {}
                                 }
                             }
 
-                            // Sort latest first
+                            // Sort by createdAt descending
                             bookingDocs.sort((b1, b2) -> {
-                                try {
-                                    return sdf.parse(b2.getString("bookingDate"))
-                                            .compareTo(sdf.parse(b1.getString("bookingDate")));
-                                } catch (ParseException e) {
-                                    return 0;
-                                }
+                                Long c1 = b1.getLong("createdAt");
+                                Long c2 = b2.getLong("createdAt");
+                                if (c1 == null) c1 = 0L;
+                                if (c2 == null) c2 = 0L;
+                                return c2.compareTo(c1); // latest first
                             });
 
                             allBookings.clear();

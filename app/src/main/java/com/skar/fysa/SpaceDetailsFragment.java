@@ -9,7 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -55,15 +54,41 @@ public class SpaceDetailsFragment extends Fragment {
 
         firestore = FirebaseFirestore.getInstance();
 
+        // Check if Space object or spaceId was passed
         if (getArguments() != null) {
             space = getArguments().getParcelable("space");
-            if (space != null) loadSpace();
+            spaceId = getArguments().getString("spaceId");
+
+            if (space != null) {
+                loadSpace(); // Load from passed object
+            } else if (spaceId != null) {
+                fetchSpaceFromFirestore(spaceId); // Fetch from Firestore
+            } else {
+                Snackbar.make(view, "No space data available", Snackbar.LENGTH_SHORT).show();
+            }
         }
 
         setupDirections();
         setupBooking();
 
         return view;
+    }
+
+    // Fetch full space data from Firestore using spaceId
+    private void fetchSpaceFromFirestore(String spaceId) {
+        firestore.collection("spaces").document(spaceId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        space = document.toObject(Space.class);
+                        if (space != null) loadSpace();
+                    } else {
+                        Snackbar.make(requireView(), "Space not found", Snackbar.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Snackbar.make(requireView(), "Failed to load space: " + e.getMessage(), Snackbar.LENGTH_LONG).show()
+                );
     }
 
     @SuppressLint("SetTextI18n")
@@ -80,21 +105,18 @@ public class SpaceDetailsFragment extends Fragment {
         tvContact.setText("Contact: " + space.getContact());
         tvCategory.setText("Category: " + space.getCategory());
 
-        // --- Display space features ---
-        // --- Display space features ---
+        // Display space features
         String features = space.getSpaceFeatures();
         if (features != null && !features.isEmpty()) {
-            // Split by comma, trim each feature, then join with newline + tab
             String[] featureArray = features.split(",");
-            StringBuilder formattedFeatures = new StringBuilder();
+            StringBuilder formattedFeatures = new StringBuilder("Features:");
             for (String f : featureArray) {
-                formattedFeatures.append("\n\t").append(f.trim());
+                formattedFeatures.append("\n\t• ").append(f.trim());
             }
-            tvSpaceFeatures.setText("Features:" + formattedFeatures.toString());
+            tvSpaceFeatures.setText(formattedFeatures.toString());
         } else {
             tvSpaceFeatures.setText("Features: N/A");
         }
-
 
         Integer distance = space.getDistanceMeters();
         if (distance != null && distance > 0) {
@@ -119,7 +141,7 @@ public class SpaceDetailsFragment extends Fragment {
             if (mapIntent.resolveActivity(requireContext().getPackageManager()) != null) {
                 startActivity(mapIntent);
             } else {
-                Toast.makeText(requireContext(), "Google Maps app not installed.", Toast.LENGTH_SHORT).show();
+                Snackbar.make(requireView(), "Google Maps app not installed", Snackbar.LENGTH_SHORT).show();
             }
         });
     }
@@ -201,7 +223,7 @@ public class SpaceDetailsFragment extends Fragment {
                             .addOnSuccessListener(docRef -> {
                                 String bookingId = docRef.getId();
 
-                                // --- ADD BOOKING REFERENCE AS MAP IN USER DOCUMENT ---
+                                // Add booking reference to user document
                                 firestore.collection("users")
                                         .document(userId)
                                         .update("booking_reference." + bookingId, true)
