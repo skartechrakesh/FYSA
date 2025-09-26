@@ -89,11 +89,12 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             app:adSize="BANNER"
-            app:adUnitId="ca-app-pub-3940256099942544/9214589741"
+            app:adUnitId="ca-app-pub-6462351900381242/1545939700"
             app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
             <!-- Original Ad Unit Id: "ca-app-pub-6462351900381242/1545939700" -->
+            <!-- Test Ad Unit Id: "ca-app-pub-3940256099942544/9214589741" -->
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigationView"

@@ -38,7 +38,9 @@ import java.util.List;
 public class FindYourSpaceFragment extends Fragment {
 
     private static final double MAX_DISTANCE_METERS = 5000;
-    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110";
+    private static final String NATIVE_AD_UNIT_ID = "ca-app-pub-6462351900381242/4181472219";
+    // Test Ad Unit: "ca-app-pub-3940256099942544/2247696110"
+    // Original Ad Unit: "ca-app-pub-6462351900381242/4181472219"
 
     private final List<Space> spaceList = new ArrayList<>();
 

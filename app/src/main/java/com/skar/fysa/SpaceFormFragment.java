@@ -334,8 +334,10 @@ public class SpaceFormFragment extends Fragment {
     }
 
     private void loadInterstitialAd() {
+        // Test ad unit: "ca-app-pub-3940256099942544/1033173712"
+        // Original ad unit: "ca-app-pub-6462351900381242/1252944593"
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712",
+                "ca-app-pub-6462351900381242/1252944593",
                 new AdRequest.Builder().build(),
                 new InterstitialAdLoadCallback() {
                     @Override
