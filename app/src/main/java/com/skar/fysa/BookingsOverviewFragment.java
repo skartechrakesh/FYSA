@@ -1,8 +1,6 @@
 package com.skar.fysa;
 
-import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,44 +10,36 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class BookingsOverviewFragment extends Fragment {
 
     private static final SimpleDateFormat sdf =
             new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-    private static final int BATCH_SIZE = 10;
+    private static final int PAGE_SIZE = 20; // Adjust page size if needed
 
-    private final ArrayList<DocumentSnapshot> allBookings = new ArrayList<>();
+    private SwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout bookingsListContainer;
-    private BarChart barChart;
     private FirebaseFirestore firestore;
     private FirebaseUser currentUser;
-    private int loadedCount = 0;
+
+    private List<DocumentSnapshot> allBookings = new ArrayList<>();
+    private int currentIndex = 0;
+    private Button btnLoadMore;
 
     @Nullable
     @Override
@@ -58,14 +48,33 @@ public class BookingsOverviewFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_bookings_overview, container, false);
+
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
         bookingsListContainer = view.findViewById(R.id.bookingsListContainer);
-        barChart = view.findViewById(R.id.bookingsBarChart);
+
+        // Add Load More button
+        btnLoadMore = new Button(requireContext());
+        btnLoadMore.setText("Load More");
+        btnLoadMore.setVisibility(View.GONE);
+        bookingsListContainer.addView(btnLoadMore);
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         firestore = FirebaseFirestore.getInstance();
 
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            if (currentUser != null) {
+                refreshBookings();
+            } else {
+                clearUI();
+                showSnackbar("Please login to view bookings");
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
+
+        btnLoadMore.setOnClickListener(v -> loadNextBatch());
+
         if (currentUser != null) {
-            loadBookings();
+            refreshBookings();
         } else {
             clearUI();
             showSnackbar("Please login to view bookings");
@@ -74,77 +83,90 @@ public class BookingsOverviewFragment extends Fragment {
         return view;
     }
 
-    private void loadBookings() {
+    private void refreshBookings() {
+        bookingsListContainer.removeAllViews();
+        bookingsListContainer.addView(btnLoadMore);
         allBookings.clear();
-        loadedCount = 0;
+        currentIndex = 0;
+        btnLoadMore.setVisibility(View.GONE);
+        swipeRefreshLayout.setRefreshing(true);
 
+        // Step 1: Get all spaces of owner
         firestore.collection("spaces")
-                .orderBy("name")
+                .whereEqualTo("ownerId", currentUser.getUid())
                 .get()
-                .addOnSuccessListener(spacesSnapshot -> {
-                    Map<Integer, Integer> monthlyCounts = new HashMap<>();
-                    ArrayList<DocumentSnapshot> bookingDocs = new ArrayList<>();
+                .addOnSuccessListener(spaceQuery -> {
+                    if (spaceQuery.isEmpty()) {
+                        showSnackbar("No bookings found for your spaces.");
+                        swipeRefreshLayout.setRefreshing(false);
+                        return;
+                    }
 
-                    for (DocumentSnapshot spaceSnap : spacesSnapshot.getDocuments()) {
-                        String ownerId = spaceSnap.getString("ownerId");
-                        Query bookingsQuery = firestore.collection("spaces")
-                                .document(spaceSnap.getId())
-                                .collection("bookings");
+                    List<String> spaceIds = new ArrayList<>();
+                    for (DocumentSnapshot spaceSnap : spaceQuery.getDocuments()) {
+                        spaceIds.add(spaceSnap.getId());
+                    }
 
-                        bookingsQuery.get().addOnSuccessListener(bookingsSnapshot -> {
-                            for (DocumentSnapshot bookingSnap : bookingsSnapshot.getDocuments()) {
-                                BookingsDataModel booking = bookingSnap.toObject(BookingsDataModel.class);
-                                if (booking == null) continue;
-
-                                boolean isOwner = currentUser.getUid().equals(ownerId);
-                                boolean isUserBooking = currentUser.getUid().equals(booking.getUserId());
-
-                                if (isOwner || isUserBooking) {
-                                    bookingDocs.add(bookingSnap);
-
-                                    // For bar chart, count by month using bookingDate
-                                    try {
-                                        Calendar cal = Calendar.getInstance();
-                                        cal.setTime(sdf.parse(booking.getBookingDate()));
-                                        int month = cal.get(Calendar.MONTH);
-                                        monthlyCounts.put(month, monthlyCounts.getOrDefault(month, 0) + 1);
-                                    } catch (ParseException ignored) {}
+                    // Step 2: Get all bookings for these spaces
+                    firestore.collection("bookings")
+                            .whereIn("spaceId", spaceIds)
+                            .get()
+                            .addOnSuccessListener(bookingQuery -> {
+                                if (bookingQuery.isEmpty()) {
+                                    showSnackbar("No bookings found.");
+                                    swipeRefreshLayout.setRefreshing(false);
+                                    return;
                                 }
-                            }
 
-                            // Sort by createdAt descending
-                            bookingDocs.sort((b1, b2) -> {
-                                Long c1 = b1.getLong("createdAt");
-                                Long c2 = b2.getLong("createdAt");
-                                if (c1 == null) c1 = 0L;
-                                if (c2 == null) c2 = 0L;
-                                return c2.compareTo(c1); // latest first
+                                allBookings.addAll(bookingQuery.getDocuments());
+
+                                // Step 3: Sort bookings by createdAt descending
+                                Collections.sort(allBookings, (o1, o2) -> {
+                                    long t1 = o1.contains("createdAt") ? o1.getLong("createdAt") : 0;
+                                    long t2 = o2.contains("createdAt") ? o2.getLong("createdAt") : 0;
+                                    return Long.compare(t2, t1); // Descending
+                                });
+
+                                swipeRefreshLayout.setRefreshing(false);
+                                loadNextBatch();
+                            })
+                            .addOnFailureListener(e -> {
+                                showSnackbar("Failed to load bookings: " + e.getMessage());
+                                swipeRefreshLayout.setRefreshing(false);
                             });
 
-                            allBookings.clear();
-                            allBookings.addAll(bookingDocs);
-
-                            bookingsListContainer.removeAllViews();
-                            loadedCount = 0;
-                            loadNextBatch(getLayoutInflater());
-                            updateBarChart(monthlyCounts);
-                        });
-                    }
                 })
-                .addOnFailureListener(e -> showSnackbar("Failed to fetch bookings: " + e.getMessage()));
+                .addOnFailureListener(e -> {
+                    showSnackbar("Failed to load spaces: " + e.getMessage());
+                    swipeRefreshLayout.setRefreshing(false);
+                });
     }
 
-    private void loadNextBatch(LayoutInflater inflater) {
-        int end = Math.min(loadedCount + BATCH_SIZE, allBookings.size());
-        for (int i = loadedCount; i < end; i++) {
-            addBookingRow(inflater, allBookings.get(i));
+    private void loadNextBatch() {
+        int endIndex = Math.min(currentIndex + PAGE_SIZE, allBookings.size());
+        if (currentIndex >= endIndex) {
+            btnLoadMore.setVisibility(View.GONE);
+            return;
         }
-        loadedCount = end;
 
-        if (loadedCount < allBookings.size()) addLoadMoreLink(inflater);
+        for (int i = currentIndex; i < endIndex; i++) {
+            DocumentSnapshot bookingSnap = allBookings.get(i);
+            String spaceId = bookingSnap.getString("spaceId");
+            // Fetch space for this booking
+            firestore.collection("spaces").document(spaceId).get()
+                    .addOnSuccessListener(spaceSnap -> {
+                        if (spaceSnap.exists()) {
+                            addBookingRow(spaceSnap, bookingSnap);
+                        }
+                    });
+        }
+
+        currentIndex = endIndex;
+        btnLoadMore.setVisibility(currentIndex < allBookings.size() ? View.VISIBLE : View.GONE);
     }
 
-    private void addBookingRow(LayoutInflater inflater, DocumentSnapshot bookingSnap) {
+    private void addBookingRow(DocumentSnapshot spaceSnap, DocumentSnapshot bookingSnap) {
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
         View row = inflater.inflate(R.layout.item_bookings_overview_list, bookingsListContainer, false);
 
         TextView tvName = row.findViewById(R.id.tvBookingName);
@@ -152,105 +174,37 @@ public class BookingsOverviewFragment extends Fragment {
         TextView tvDate = row.findViewById(R.id.tvBookingDate);
         TextView tvCategory = row.findViewById(R.id.tvBookingCategory);
         TextView tvContact = row.findViewById(R.id.tvContact);
-        TextView tvStatus = row.findViewById(R.id.tvBookingStatus);
-        Button btnAction = row.findViewById(R.id.btnAction);
 
-        BookingsDataModel booking = bookingSnap.toObject(BookingsDataModel.class);
+        Booking booking = bookingSnap.toObject(Booking.class);
         if (booking == null) return;
 
-        tvName.setText(booking.getSpaceName());
-        tvUsername.setText("Booked by: " + booking.getUsername());
-        tvDate.setText(booking.getBookingDate());
-        tvCategory.setText(booking.getSpaceCategory());
-        tvContact.setText("Contact: " + booking.getUserContact());
-        tvStatus.setText(booking.isRead() ? "Visit Accepted" : "Visit Booked");
+        tvName.setText(spaceSnap.contains("name") ? spaceSnap.getString("name") : "N/A");
+        tvUsername.setText("Booked by: " +
+                (booking.getBookedByUserName() != null ? booking.getBookedByUserName() : "N/A"));
+        tvDate.setText(booking.getCreatedAt() > 0 ? sdf.format(booking.getCreatedAt()) : "N/A");
+        tvCategory.setText(spaceSnap.contains("category") ? spaceSnap.getString("category") : "N/A");
 
-        if (!booking.isRead()) {
-            btnAction.setVisibility(View.VISIBLE);
-            btnAction.setText("Mark as Read");
-            btnAction.setBackgroundTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(requireContext(), R.color.red_700)));
+        // Fetch latest contact from users collection
+        String bookedByUserId = booking.getBookedBy();
+        if (bookedByUserId != null) {
+            firestore.collection("users")
+                    .document(bookedByUserId)
+                    .get()
+                    .addOnSuccessListener(userDoc -> {
+                        String contact = userDoc.getString("contact");
+                        tvContact.setText("Contact: " + (contact != null ? contact : "N/A"));
+                    })
+                    .addOnFailureListener(e -> tvContact.setText("Contact: N/A"));
         } else {
-            btnAction.setVisibility(View.GONE);
+            tvContact.setText("Contact: N/A");
         }
 
-        btnAction.setOnClickListener(v -> {
-            bookingSnap.getReference().update("read", true)
-                    .addOnSuccessListener(aVoid -> {
-                        tvStatus.setText("Visit Accepted");
-                        btnAction.setVisibility(View.GONE);
-                    })
-                    .addOnFailureListener(e -> showSnackbar("Failed to update status: " + e.getMessage()));
-        });
-
-        bookingsListContainer.addView(row);
-    }
-
-    private void addLoadMoreLink(LayoutInflater inflater) {
-        View existing = bookingsListContainer.findViewWithTag("load_more_link");
-        if (existing != null) bookingsListContainer.removeView(existing);
-
-        TextView loadMore = new TextView(requireContext());
-        loadMore.setText("Load More");
-        loadMore.setTag("load_more_link");
-        loadMore.setTextSize(16f);
-        loadMore.setPadding(0, 24, 0, 24);
-        loadMore.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        loadMore.setTextColor(getResources().getColor(R.color.linkText, null));
-
-        loadMore.setOnClickListener(v -> {
-            bookingsListContainer.removeView(v);
-            loadNextBatch(inflater);
-        });
-
-        bookingsListContainer.addView(loadMore);
-    }
-
-    private void updateBarChart(Map<Integer, Integer> monthlyCounts) {
-        ArrayList<BarEntry> entries = new ArrayList<>();
-        String[] monthLabels = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-        for (int i = 0; i < 12; i++)
-            entries.add(new BarEntry(i, monthlyCounts.getOrDefault(i, 0)));
-
-        BarDataSet dataSet = new BarDataSet(entries, "Bookings per Month");
-        dataSet.setColor(ContextCompat.getColor(requireContext(), R.color.linkText));
-
-        TypedValue typedValue = new TypedValue();
-        requireContext().getTheme().resolveAttribute(R.attr.colorOnSurface, typedValue, true);
-        int textColor = typedValue.data;
-
-        dataSet.setValueTextColor(textColor);
-        dataSet.setValueTextSize(10f);
-
-        BarData data = new BarData(dataSet);
-        barChart.setData(data);
-        barChart.setFitBars(true);
-        barChart.getDescription().setEnabled(false);
-
-        XAxis xAxis = barChart.getXAxis();
-        xAxis.setGranularity(1f);
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setTextColor(textColor);
-        xAxis.setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                int index = (int) value;
-                return (index >= 0 && index < monthLabels.length) ? monthLabels[index] : "";
-            }
-        });
-
-        barChart.getAxisLeft().setTextColor(textColor);
-        barChart.getAxisRight().setTextColor(textColor);
-        barChart.getLegend().setTextColor(textColor);
-        barChart.invalidate();
+        bookingsListContainer.addView(row, bookingsListContainer.getChildCount() - 1); // above Load More button
     }
 
     private void clearUI() {
         bookingsListContainer.removeAllViews();
-        barChart.clear();
-        barChart.invalidate();
+        bookingsListContainer.addView(btnLoadMore);
     }
 
     private void showSnackbar(String message) {

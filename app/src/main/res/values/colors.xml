@@ -395,4 +395,5 @@
     <color name="background">#121212</color>
     <color name="surface">#121212</color>
     <color name="nearly_black">#0B0B0B</color>
+    <color name="nearly_black1">#0E0E0E</color>
 </resources>

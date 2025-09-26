@@ -3,83 +3,76 @@ package com.skar.fysa;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/**
- * Model class representing a booking.
- * Stored in Firebase under: bookings_by_users/<userId>/<bookingId>
- */
 public class Booking implements Parcelable {
 
     private String bookingId;
-    private String userId;
+    private String bookedBy;           // UID of the user who booked
+    private String bookedByUserName;   // ✅ Username of the user who booked
     private String ownerId;
     private String spaceId;
     private String spaceName;
-    private String spaceAddress; // ✅ Added field
+    private String spaceAddress;
     private String spaceType;
-    private String bookingDate;
-    private String status;
-    private String username;
+    private String status;             // "Pending" or "Accepted"
     private long createdAt;
     private double latitude;
     private double longitude;
+    private String userContact;        // Optional, contact of the user
 
-    // Required empty constructor for Firebase deserialization
-    public Booking() {
-    }
+    public Booking() {}
 
-    // Full constructor to match all fields
-    public Booking(String bookingId, String userId, String ownerId,
-                   String spaceId, String spaceName, String spaceAddress,
-                   String spaceType, String bookingDate, String status,
-                   String username, long createdAt,
-                   double latitude, double longitude) {
+    public Booking(String bookingId, String bookedBy, String bookedByUserName,
+                   String ownerId, String spaceId, String spaceName,
+                   String spaceAddress, String spaceType, String status,
+                   long createdAt, double latitude, double longitude,
+                   String userContact) {
         this.bookingId = bookingId;
-        this.userId = userId;
+        this.bookedBy = bookedBy;
+        this.bookedByUserName = bookedByUserName;
         this.ownerId = ownerId;
         this.spaceId = spaceId;
         this.spaceName = spaceName;
-        this.spaceAddress = spaceAddress; // ✅ Added
+        this.spaceAddress = spaceAddress;
         this.spaceType = spaceType;
-        this.bookingDate = bookingDate;
         this.status = status;
-        this.username = username;
         this.createdAt = createdAt;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.userContact = userContact;
     }
 
-    // --- Parcelable implementation ---
+    // Parcelable implementation
     protected Booking(Parcel in) {
         bookingId = in.readString();
-        userId = in.readString();
+        bookedBy = in.readString();
+        bookedByUserName = in.readString();
         ownerId = in.readString();
         spaceId = in.readString();
         spaceName = in.readString();
-        spaceAddress = in.readString(); // ✅ Added
+        spaceAddress = in.readString();
         spaceType = in.readString();
-        bookingDate = in.readString();
         status = in.readString();
-        username = in.readString();
         createdAt = in.readLong();
         latitude = in.readDouble();
         longitude = in.readDouble();
+        userContact = in.readString();
     }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(bookingId);
-        dest.writeString(userId);
+        dest.writeString(bookedBy);
+        dest.writeString(bookedByUserName);
         dest.writeString(ownerId);
         dest.writeString(spaceId);
         dest.writeString(spaceName);
-        dest.writeString(spaceAddress); // ✅ Added
+        dest.writeString(spaceAddress);
         dest.writeString(spaceType);
-        dest.writeString(bookingDate);
         dest.writeString(status);
-        dest.writeString(username);
         dest.writeLong(createdAt);
         dest.writeDouble(latitude);
         dest.writeDouble(longitude);
+        dest.writeString(userContact);
     }
 
     @Override
@@ -99,108 +92,43 @@ public class Booking implements Parcelable {
         }
     };
 
-    // --- Getters and Setters ---
-    public String getBookingId() {
-        return bookingId;
-    }
+    // --- Getters & Setters ---
+    public String getBookingId() { return bookingId; }
+    public void setBookingId(String bookingId) { this.bookingId = bookingId; }
 
-    public void setBookingId(String bookingId) {
-        this.bookingId = bookingId;
-    }
+    public String getBookedBy() { return bookedBy; }
+    public void setBookedBy(String bookedBy) { this.bookedBy = bookedBy; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getBookedByUserName() { return bookedByUserName; }
+    public void setBookedByUserName(String bookedByUserName) { this.bookedByUserName = bookedByUserName; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    public String getOwnerId() { return ownerId; }
+    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
 
-    public String getOwnerId() {
-        return ownerId;
-    }
+    public String getSpaceId() { return spaceId; }
+    public void setSpaceId(String spaceId) { this.spaceId = spaceId; }
 
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
-    }
+    public String getSpaceName() { return spaceName; }
+    public void setSpaceName(String spaceName) { this.spaceName = spaceName; }
 
-    public String getSpaceId() {
-        return spaceId;
-    }
+    public String getSpaceAddress() { return spaceAddress; }
+    public void setSpaceAddress(String spaceAddress) { this.spaceAddress = spaceAddress; }
 
-    public void setSpaceId(String spaceId) {
-        this.spaceId = spaceId;
-    }
+    public String getSpaceType() { return spaceType; }
+    public void setSpaceType(String spaceType) { this.spaceType = spaceType; }
 
-    public String getSpaceName() {
-        return spaceName;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setSpaceName(String spaceName) {
-        this.spaceName = spaceName;
-    }
+    public long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
 
-    public String getSpaceAddress() { // ✅ Added
-        return spaceAddress;
-    }
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
 
-    public void setSpaceAddress(String spaceAddress) { // ✅ Added
-        this.spaceAddress = spaceAddress;
-    }
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
 
-    public String getSpaceType() {
-        return spaceType;
-    }
-
-    public void setSpaceType(String spaceType) {
-        this.spaceType = spaceType;
-    }
-
-    public String getBookingDate() {
-        return bookingDate;
-    }
-
-    public void setBookingDate(String bookingDate) {
-        this.bookingDate = bookingDate;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(long createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
+    public String getUserContact() { return userContact; }
+    public void setUserContact(String userContact) { this.userContact = userContact; }
 }

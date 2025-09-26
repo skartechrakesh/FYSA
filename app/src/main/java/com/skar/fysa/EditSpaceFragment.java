@@ -36,8 +36,6 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.osmdroid.config.Configuration;
@@ -51,7 +49,7 @@ import java.util.Objects;
 
 public class EditSpaceFragment extends Fragment {
 
-    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"; // Original Unit ID: "ca-app-pub-6462351900381242/1252944593"
+    private static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712";
 
     private TextInputEditText inputName, inputOwnerName, inputContact, inputAddress, inputSpaceFeatures;
     private MaterialAutoCompleteTextView spinnerCategory, spinnerVacancy;
@@ -74,16 +72,12 @@ public class EditSpaceFragment extends Fragment {
     private InterstitialAd mInterstitialAd;
     private OnSpaceUpdatedListener onSpaceUpdatedListener;
 
-    // ---------- Utility: Set stroke colors for TextInputLayouts ----------
     private static void setupTextInputStrokes(Context context, TextInputLayout... inputs) {
         if (context == null || inputs == null) return;
-
         int focusedColor = ContextCompat.getColor(context, R.color.stroke_focused);
         int unfocusedColor = ContextCompat.getColor(context, R.color.stroke_unfocused);
-
         for (TextInputLayout input : inputs) {
             if (input == null) continue;
-
             ColorStateList states = new ColorStateList(
                     new int[][]{
                             new int[]{android.R.attr.state_enabled, android.R.attr.state_focused},
@@ -91,7 +85,6 @@ public class EditSpaceFragment extends Fragment {
                     },
                     new int[]{focusedColor, unfocusedColor}
             );
-
             input.setBoxStrokeColorStateList(states);
         }
     }
@@ -108,7 +101,6 @@ public class EditSpaceFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_edit_space, container, false);
 
-        // OSMDroid setup
         Configuration.getInstance().load(requireContext(),
                 requireContext().getSharedPreferences("osmdroid_prefs", 0));
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
@@ -134,7 +126,7 @@ public class EditSpaceFragment extends Fragment {
         setListeners();
         fillFormWithData();
         initMap();
-        handleBackPress();
+        // handleBackPress();
         setupTextInputStrokes(requireContext(), eNameLayout, eOwnerNameLayout, eContactLayout, eAddressLayout, eFeaturesLayout, eCategoryLayout, eVacancyLayout);
         loadInterstitialAd();
 
@@ -168,7 +160,6 @@ public class EditSpaceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_dropdown_item_1line, categories);
         spinnerCategory.setAdapter(adapter);
-
         int position = adapter.getPosition(space.getCategory());
         if (position >= 0) spinnerCategory.setText(adapter.getItem(position), false);
     }
@@ -178,7 +169,6 @@ public class EditSpaceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_dropdown_item_1line, options);
         spinnerVacancy.setAdapter(adapter);
-
         String currentValue = (space.isActive() != null && space.isActive()) ? "Yes" : "No";
         spinnerVacancy.post(() -> spinnerVacancy.setText(currentValue, false));
     }
@@ -186,7 +176,7 @@ public class EditSpaceFragment extends Fragment {
     @SuppressLint("ClickableViewAccessibility")
     private void setListeners() {
         btnMyLocation.setOnClickListener(v -> requestLocationPermission());
-        btnSubmit.setOnClickListener(v -> checkUniqueNameAndShowAd());
+        btnSubmit.setOnClickListener(v -> showAdThenSave());
 
         mapView.setOnTouchListener((v, event) -> {
             v.getParent().requestDisallowInterceptTouchEvent(true);
@@ -197,27 +187,22 @@ public class EditSpaceFragment extends Fragment {
         });
     }
 
-    private void handleBackPress() {
-        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        getParentFragmentManager().popBackStack();
-                    }
-                });
-    }
+//    private void handleBackPress() {
+//        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+//                new OnBackPressedCallback(true) {
+//                    @Override
+//                    public void handleOnBackPressed() {
+//                        getParentFragmentManager().popBackStack();
+//                    }
+//                });
+//    }
 
     private void fillFormWithData() {
         inputName.setText(space.getName());
         inputOwnerName.setText(space.getOwnerName());
         inputContact.setText(space.getContact());
         inputAddress.setText(space.getAddress());
-        inputSpaceFeatures.setText(space.getSpaceFeatures());
-        if (space.getSpaceFeatures() != null) {
-            inputSpaceFeatures.setText(space.getSpaceFeatures());
-        } else {
-            inputSpaceFeatures.setText("");
-        }
+        inputSpaceFeatures.setText(space.getSpaceFeatures() != null ? space.getSpaceFeatures() : "");
     }
 
     private void initMap() {
@@ -244,7 +229,7 @@ public class EditSpaceFragment extends Fragment {
     @SuppressLint("MissingPermission")
     private void moveToCurrentLocation() {
         android.location.LocationManager lm =
-                (android.location.LocationManager) requireContext().getSystemService(getContext().LOCATION_SERVICE);
+                (android.location.LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
         try {
             Location last = null;
             if (lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER))
@@ -261,40 +246,6 @@ public class EditSpaceFragment extends Fragment {
         } catch (SecurityException e) {
             Snackbar.make(requireView(), "Location permission missing", Snackbar.LENGTH_SHORT).show();
         }
-    }
-
-    // -------------------- Unique Name Check & Ad Flow --------------------
-    private void checkUniqueNameAndShowAd() {
-        String name = inputName.getText() != null ? inputName.getText().toString().trim() : "";
-
-        if (name.isEmpty()) {
-            Snackbar.make(requireView(), "Name cannot be empty", Snackbar.LENGTH_SHORT).show();
-            return;
-        }
-
-        spacesRef
-                .whereEqualTo("ownerId", currentUserId)
-                .whereEqualTo("name", name)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    boolean exists = false;
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        if (!doc.getId().equals(space.getId())) {
-                            exists = true;
-                            break;
-                        }
-                    }
-
-                    if (exists) {
-                        Snackbar.make(requireView(), "Space name already exists. Please use a different name.", Snackbar.LENGTH_LONG).show();
-                    } else {
-                        showAdThenSave();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Snackbar.make(requireView(), "Failed to check space name. Updating anyway.", Snackbar.LENGTH_SHORT).show();
-                    showAdThenSave();
-                });
     }
 
     private void showAdThenSave() {
@@ -319,7 +270,6 @@ public class EditSpaceFragment extends Fragment {
         }, 500);
     }
 
-    // -------------------- Save / Update Space --------------------
     private void saveUpdatedSpace() {
         String name = inputName.getText() != null ? inputName.getText().toString().trim() : "";
         String ownerName = inputOwnerName.getText() != null ? inputOwnerName.getText().toString().trim() : "";
@@ -334,10 +284,8 @@ public class EditSpaceFragment extends Fragment {
             return;
         }
 
-        GeoPoint center = (GeoPoint) mapView.getMapCenter();
         boolean isActive = vacancyText.equals("Yes");
-
-        DocumentReference spaceDocRef = spacesRef.document(space.getId());
+        GeoPoint center = (GeoPoint) mapView.getMapCenter();
 
         Map<String, Object> spaceUpdates = new HashMap<>();
         spaceUpdates.put("name", name);
@@ -351,46 +299,10 @@ public class EditSpaceFragment extends Fragment {
         spaceUpdates.put("active", isActive);
         spaceUpdates.put("ownerId", currentUserId);
 
-        spaceDocRef.update(spaceUpdates)
-                .addOnSuccessListener(unused ->
-                        updateBookingsAfterSpaceEdit(name, ownerName, contact, address, features, category, center, isActive)
-                )
-                .addOnFailureListener(e -> Snackbar.make(requireView(),
-                        "Space update failed: " + e.getMessage(),
-                        Snackbar.LENGTH_LONG).show());
-    }
-
-    private void updateBookingsAfterSpaceEdit(String name, String ownerName, String contact, String address, String features,
-                                              String category, GeoPoint center, boolean isActive) {
-
         spacesRef.document(space.getId())
-                .collection("bookings")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    for (DocumentSnapshot bookingSnap : querySnapshot.getDocuments()) {
-                        if (!isActive) {
-                            bookingSnap.getReference().delete();
-                            String userId = bookingSnap.getString("userId");
-                            if (userId != null) {
-                                firestore.collection("users")
-                                        .document(userId)
-                                        .collection("booking_reference")
-                                        .document(bookingSnap.getId())
-                                        .delete();
-                            }
-                        } else {
-                            Map<String, Object> bookingUpdates = new HashMap<>();
-                            bookingUpdates.put("spaceName", name);
-                            bookingUpdates.put("spaceCategory", category);
-                            bookingUpdates.put("latitude", center.getLatitude());
-                            bookingUpdates.put("longitude", center.getLongitude());
-                            bookingUpdates.put("userContact", contact);
-
-                            bookingSnap.getReference().update(bookingUpdates);
-                        }
-                    }
-
-                    // Update local object & UI
+                .update(spaceUpdates)
+                .addOnSuccessListener(unused -> {
+                    // Update local object & return result
                     space.setName(name);
                     space.setOwnerName(ownerName);
                     space.setContact(contact);
@@ -403,16 +315,16 @@ public class EditSpaceFragment extends Fragment {
                     result.putParcelable("space", space);
                     getParentFragmentManager().setFragmentResult("edit_space_result", result);
 
-                    if (onSpaceUpdatedListener != null) {
-                        onSpaceUpdatedListener.onSpaceUpdated(space);
-                    }
+                    if (onSpaceUpdatedListener != null) onSpaceUpdatedListener.onSpaceUpdated(space);
 
                     Snackbar.make(requireView(), "Space updated successfully!", Snackbar.LENGTH_SHORT).show();
-                    requireActivity().getSupportFragmentManager().popBackStack();
+                    requireActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragmentContainer, new ManageSpacesFragment())
+                            .commitAllowingStateLoss();
                 })
                 .addOnFailureListener(e -> Snackbar.make(requireView(),
-                        "Failed to fetch bookings: " + e.getMessage(),
-                        Snackbar.LENGTH_LONG).show());
+                        "Space update failed: " + e.getMessage(), Snackbar.LENGTH_LONG).show());
     }
 
     private void loadInterstitialAd() {

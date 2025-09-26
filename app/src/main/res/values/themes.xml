@@ -31,6 +31,7 @@
         <item name="colorPrimaryInverse">@color/indigo_200</item>
         <item name="colorSuccess">@color/green_500</item>
         <item name="buttonColor">@color/deep_orange_400</item>
+        <item name="colorContainerShade">@color/grey_100</item>
     </style>
 
     <style name="CircleImage">

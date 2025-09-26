@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -21,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "theme_preference";
     private static final String KEY_THEME_MODE = "theme_mode";
-    private final Handler backPressHandler = new Handler();
+    private final Handler backPressHandler = new Handler(Looper.getMainLooper());
     private boolean doubleBackToExitPressedOnce = false;
 
     @SuppressLint("SetTextI18n")

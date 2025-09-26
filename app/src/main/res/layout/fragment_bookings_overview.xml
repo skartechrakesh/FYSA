@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -19,7 +20,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Bookings List Title (Outside ScrollView) -->
+    <!-- Bookings List Title -->
     <TextView
         android:id="@+id/bookingsListTitle"
         android:layout_width="wrap_content"
@@ -34,40 +35,38 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/nativeAdContainer" />
 
-    <!-- Scrollable Content (BarChart + Bookings List) -->
-    <ScrollView
-        android:id="@+id/scrollContent"
+    <!-- SwipeRefreshLayout wraps ScrollView -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:contentDescription="@string/bookings_list"
+        app:layout_constraintTop_toBottomOf="@id/bookingsListTitle"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bookingsListTitle">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/scrollContent"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:contentDescription="@string/bookings_list">
 
-            <!-- Bar Graph -->
-            <com.github.mikephil.charting.charts.BarChart
-                android:id="@+id/bookingsBarChart"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Bookings List -->
             <LinearLayout
-                android:id="@+id/bookingsListContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:divider="@android:color/darker_gray"
-                android:dividerPadding="8dp"
-                android:orientation="vertical"
-                android:showDividers="middle" />
-        </LinearLayout>
-    </ScrollView>
+                android:orientation="vertical">
+
+                <!-- Bookings List -->
+                <LinearLayout
+                    android:id="@+id/bookingsListContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:divider="@android:color/darker_gray"
+                    android:dividerPadding="8dp"
+                    android:orientation="vertical"
+                    android:showDividers="middle" />
+            </LinearLayout>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

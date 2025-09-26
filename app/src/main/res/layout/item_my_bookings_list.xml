@@ -1,96 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?android:attr/colorBackground"
-    android:orientation="vertical"
-    android:padding="12dp">
-
-    <!-- Booking Name -->
-    <TextView
-        android:id="@+id/tvBookingName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <!-- Booking Address -->
-    <TextView
-        android:id="@+id/tvBookingAddress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="Address"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="13sp"
-        android:ellipsize="end"
-        android:singleLine="true" />
-
-    <!-- Booking Type / Space Type -->
-    <TextView
-        android:id="@+id/tvBookingType"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="?attr/colorOnSurface" />
-
-    <!-- Booking Date -->
-    <TextView
-        android:id="@+id/tvBookingDate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="?attr/colorOnSurface" />
-
-    <!-- Booking Status -->
-    <TextView
-        android:id="@+id/tvBookingStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="?attr/colorSuccess" />
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="6dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutline"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
-        style="?android:attr/buttonBarStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="?attr/colorContainerShade">
 
-        <!-- Details Button -->
-        <Button
-            android:id="@+id/btnDetails"
-            style="?android:attr/buttonBarButtonStyle"
+        <!-- Booking Name -->
+        <TextView
+            android:id="@+id/tvBookingName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:backgroundTint="@android:color/holo_blue_light"
-            android:text="Details"
-            android:textColor="@color/textPrimary" />
+            android:text="Booking Name"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <!-- Cancel Visit Button -->
-        <Button
-            android:id="@+id/btnAction"
-            style="?android:attr/buttonBarButtonStyle"
+        <!-- Booking Address -->
+        <TextView
+            android:id="@+id/tvBookingAddress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:backgroundTint="?attr/colorSecondary"
-            android:text="@string/cancel_visit"
-            android:textColor="@color/textPrimary" />
+            android:layout_marginTop="2dp"
+            android:text="Address"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="13sp"
+            android:ellipsize="end"
+            android:singleLine="true" />
 
-        <!-- Directions Button -->
-        <Button
-            android:id="@+id/btnDirections"
-            style="?android:attr/buttonBarButtonStyle"
+        <!-- Booking Type / Space Type -->
+        <TextView
+            android:id="@+id/tvBookingType"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:backgroundTint="?attr/colorSuccess"
-            android:text="Open in Maps"
-            android:textColor="@color/textPrimary" />
+            android:text="Space Type"
+            android:layout_marginTop="2dp"
+            android:textColor="?attr/colorOnSurface" />
 
+        <!-- Booking Date -->
+        <TextView
+            android:id="@+id/tvBookingDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Booking Date"
+            android:layout_marginTop="2dp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <LinearLayout
+            style="?android:attr/buttonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Details Button -->
+            <Button
+                android:id="@+id/btnDetails"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="@android:color/holo_blue_light"
+                android:text="Details"
+                android:textColor="@color/textPrimary" />
+
+            <!-- Cancel Visit Button -->
+            <Button
+                android:id="@+id/btnAction"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="?attr/colorSecondary"
+                android:text="@string/cancel_visit"
+                android:textColor="@color/textPrimary" />
+
+            <!-- Directions Button -->
+            <Button
+                android:id="@+id/btnDirections"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="?attr/colorSuccess"
+                android:text="Open in Maps"
+                android:textColor="@color/textPrimary" />
+
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

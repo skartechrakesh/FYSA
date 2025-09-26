@@ -3,5 +3,5 @@
     <attr name="colorSuccess" format="color" />
     <attr name="colorOnSurface" format="color" />
     <attr name="buttonColor" format="color" />
-
+    <attr name="colorContainerShade" format="color" />
 </resources>

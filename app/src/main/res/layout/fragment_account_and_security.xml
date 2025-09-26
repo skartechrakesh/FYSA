@@ -101,14 +101,6 @@
                     android:textColor="?attr/colorOnSurface"
                     tools:ignore="DuplicateSpeakableTextCheck,VisualLintTextFieldSize" />
 
-                <Button
-                    android:id="@+id/btnVerifyEmail"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:backgroundTint="?attr/colorOnSurface"
-                    android:text="@string/verify" />
-
                 <TextView
                     android:id="@+id/tvEmailVerified"
                     android:layout_width="wrap_content"

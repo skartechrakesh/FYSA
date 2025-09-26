@@ -35,13 +35,16 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -241,30 +244,7 @@ public class SpaceFormFragment extends Fragment {
             return;
         }
 
-        checkForExistingSpace(name, ownerName, contact, address, features, center);
-    }
-
-    private void checkForExistingSpace(String name, String ownerName, String contact, String address, String features, GeoPoint center) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
-
-        String uid = user.getUid();
-
-        firestore.collection("spaces")
-                .whereEqualTo("ownerId", uid)
-                .whereEqualTo("name", name)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (!querySnapshot.isEmpty()) {
-                        Snackbar.make(fragmentView, "Space name already exists for your account.", Snackbar.LENGTH_LONG).show();
-                    } else {
-                        showAdAndSaveSpace(name, ownerName, contact, address, features, center);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Snackbar.make(fragmentView, "Failed to check space name. Saving anyway.", Snackbar.LENGTH_SHORT).show();
-                    showAdAndSaveSpace(name, ownerName, contact, address, features, center);
-                });
+        showAdAndSaveSpace(name, ownerName, contact, address, features, center);
     }
 
     private void showAdAndSaveSpace(String name, String ownerName, String contact, String address, String features, GeoPoint center) {
@@ -308,20 +288,45 @@ public class SpaceFormFragment extends Fragment {
         space.put("address", address);
         space.put("contact", contact);
         space.put("email", email);
-        space.put("spaceFeatures", features);  // <-- added
+        space.put("spaceFeatures", features);
         space.put("active", true);
 
         firestore.collection("spaces").document(spaceId).set(space)
                 .addOnSuccessListener(unused -> {
-                    firestore.collection("users").document(uid)
-                            .update("space_reference." + spaceId, true)
-                            .addOnSuccessListener(unused1 -> {
+                    // ✅ Fix: always enforce array type for references
+                    firestore.collection("references")
+                            .document("space_ref")
+                            .get()
+                            .addOnSuccessListener(snapshot -> {
+                                if (snapshot.exists() && snapshot.contains(uid)) {
+                                    Object existing = snapshot.get(uid);
+                                    if (existing instanceof java.util.List) {
+                                        // Already array → append
+                                        firestore.collection("references")
+                                                .document("space_ref")
+                                                .update(uid, FieldValue.arrayUnion(spaceId));
+                                    } else {
+                                        // Was string → overwrite as array
+                                        Map<String, Object> refData = new HashMap<>();
+                                        refData.put(uid, Arrays.asList(spaceId));
+                                        firestore.collection("references")
+                                                .document("space_ref")
+                                                .set(refData, SetOptions.merge());
+                                    }
+                                } else {
+                                    // New user → create array
+                                    Map<String, Object> refData = new HashMap<>();
+                                    refData.put(uid, Arrays.asList(spaceId));
+                                    firestore.collection("references")
+                                            .document("space_ref")
+                                            .set(refData, SetOptions.merge());
+                                }
+
                                 Snackbar.make(fragmentView, category + " saved successfully!", Snackbar.LENGTH_SHORT).show();
-                                getParentFragmentManager().popBackStack();
-                            })
-                            .addOnFailureListener(e -> Snackbar.make(fragmentView,
-                                    "Failed to add space reference: " + e.getMessage(),
-                                    Snackbar.LENGTH_LONG).show());
+                                if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                                    getParentFragmentManager().popBackStack();
+                                }
+                            });
                 })
                 .addOnFailureListener(e -> Snackbar.make(fragmentView,
                         "Save failed: " + e.getMessage(),
@@ -330,7 +335,7 @@ public class SpaceFormFragment extends Fragment {
 
     private void loadInterstitialAd() {
         InterstitialAd.load(requireContext(),
-                "ca-app-pub-3940256099942544/1033173712", // Original Unit ID: "ca-app-pub-6462351900381242/1252944593"
+                "ca-app-pub-3940256099942544/1033173712",
                 new AdRequest.Builder().build(),
                 new InterstitialAdLoadCallback() {
                     @Override
