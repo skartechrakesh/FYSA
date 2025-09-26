@@ -11,7 +11,6 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
@@ -39,7 +38,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Load the saved theme before calling super.onCreate()
+        // Load saved theme before UI
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         int savedTheme = sharedPreferences.getInt(KEY_THEME_MODE, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         AppCompatDelegate.setDefaultNightMode(savedTheme);
@@ -59,7 +58,6 @@ public class LoginActivity extends AppCompatActivity {
         firestore = FirebaseFirestore.getInstance();
 
         btnThemeToggle.setOnClickListener(v -> changeTheme());
-
         btnLoginSubmit.setOnClickListener(v -> performLogin());
         linkRegister.setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
         linkForgotPassword.setOnClickListener(v -> sendPasswordResetEmail());
@@ -72,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null) {
-            redirectToDashboard(currentUser.getUid());
+            redirectToDashboard(currentUser);
         }
     }
 
@@ -110,7 +108,7 @@ public class LoginActivity extends AppCompatActivity {
         auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful() && auth.getCurrentUser() != null) {
-                        redirectToDashboard(auth.getCurrentUser().getUid());
+                        redirectToDashboard(auth.getCurrentUser());
                     } else {
                         setLoading(false);
                         showSnackbar("Login failed: " +
@@ -142,32 +140,34 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-    private void redirectToDashboard(String uid) {
+    private void redirectToDashboard(FirebaseUser user) {
         setLoading(true);
 
-        firestore.collection("users").document(uid).get()
+        firestore.collection("users").document(user.getUid()).get()
                 .addOnCompleteListener(task -> {
                     setLoading(false);
-                    if (task.isSuccessful()) {
+                    if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
                         DocumentSnapshot snapshot = task.getResult();
-                        if (snapshot != null && snapshot.exists()) {
-                            String accountType = snapshot.getString("accountType");
+                        String accountType = snapshot.getString("accountType");
 
-                            Intent intent = "owner".equalsIgnoreCase(accountType)
+                        // If email is verified, go to dashboard, else go to verification
+                        Intent intent;
+                        if (user.isEmailVerified()) {
+                            intent = "owner".equalsIgnoreCase(accountType)
                                     ? new Intent(LoginActivity.this, OwnerDashboardActivity.class)
                                     : new Intent(LoginActivity.this, UserDashboardActivity.class);
-
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                                    Intent.FLAG_ACTIVITY_NEW_TASK |
-                                    Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            finish();
                         } else {
-                            showSnackbar("User not found in database.");
+                            intent = new Intent(LoginActivity.this, VerificationActivity.class);
+                            intent.putExtra("accountType", accountType);
                         }
+
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                                Intent.FLAG_ACTIVITY_NEW_TASK |
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
                     } else {
-                        showSnackbar("Error fetching user: " +
-                                (task.getException() != null ? task.getException().getMessage() : ""));
+                        showSnackbar("User not found in database.");
                     }
                 });
     }

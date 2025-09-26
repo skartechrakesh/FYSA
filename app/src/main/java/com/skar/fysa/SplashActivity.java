@@ -7,16 +7,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.DocumentReference;
-
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
@@ -28,19 +26,18 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Load the saved theme before calling super.onCreate()
+        // Load saved theme before super.onCreate
         SharedPreferences sharedPreferences = getSharedPreferences("theme_preference", MODE_PRIVATE);
         int savedTheme = sharedPreferences.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         AppCompatDelegate.setDefaultNightMode(savedTheme);
 
-        mAuth = FirebaseAuth.getInstance();
-        firestore = FirebaseFirestore.getInstance();
-
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        // Delay for splash branding, then check session & redirect
+        mAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
+
+        // Delay splash then check session & redirect
         new Handler(Looper.getMainLooper()).postDelayed(this::checkSessionAndRedirect, SPLASH_DELAY);
     }
 
@@ -49,33 +46,35 @@ public class SplashActivity extends AppCompatActivity {
      **/
     private void checkSessionAndRedirect() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
+
         if (currentUser == null) {
             goToMainActivity();
         } else {
-            redirectUser(currentUser.getUid());
+            DocumentReference userRef = firestore.collection("users").document(currentUser.getUid());
+
+            userRef.get().addOnCompleteListener(task -> {
+                Intent intent;
+                if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                    DocumentSnapshot snapshot = task.getResult();
+                    String accountType = snapshot.getString("accountType");
+
+                    // If email is verified, redirect to dashboard
+                    if (currentUser.isEmailVerified()) {
+                        intent = "owner".equalsIgnoreCase(accountType) ?
+                                new Intent(SplashActivity.this, OwnerDashboardActivity.class) :
+                                new Intent(SplashActivity.this, UserDashboardActivity.class);
+                    } else {
+                        // Redirect to VerificationActivity if email not verified
+                        intent = new Intent(SplashActivity.this, VerificationActivity.class);
+                        intent.putExtra("accountType", accountType);
+                    }
+                } else {
+                    intent = new Intent(SplashActivity.this, MainActivity.class);
+                }
+                launchAndFinish(intent);
+            });
         }
     }
-
-    private void redirectUser(String uid) {
-        DocumentReference userRef = firestore.collection("users").document(uid);
-
-        userRef.get().addOnCompleteListener(task -> {
-            Intent intent;
-            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                DocumentSnapshot snapshot = task.getResult();
-                String accountType = snapshot.getString("accountType");
-                if ("owner".equalsIgnoreCase(accountType)) {
-                    intent = new Intent(SplashActivity.this, OwnerDashboardActivity.class);
-                } else {
-                    intent = new Intent(SplashActivity.this, UserDashboardActivity.class);
-                }
-            } else {
-                intent = new Intent(SplashActivity.this, MainActivity.class);
-            }
-            launchAndFinish(intent);
-        });
-    }
-
 
     /**
      * ---------- HELPERS ----------

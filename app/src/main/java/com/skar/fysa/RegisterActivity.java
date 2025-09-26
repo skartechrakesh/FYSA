@@ -13,7 +13,6 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
@@ -211,7 +210,18 @@ public class RegisterActivity extends AppCompatActivity {
         auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
             if (task.isSuccessful() && auth.getCurrentUser() != null) {
                 FirebaseUser firebaseUser = auth.getCurrentUser();
-                saveUserDataToFirestore(firebaseUser.getUid(), username, contact, email, name, accountType);
+
+                // Send verification email
+                firebaseUser.sendEmailVerification()
+                        .addOnSuccessListener(aVoid -> {
+                            // Save user data in Firestore only after sending email
+                            saveUserDataToFirestore(firebaseUser.getUid(), username, contact, email, name, accountType);
+                        })
+                        .addOnFailureListener(e -> {
+                            setLoading(false);
+                            showSnackbar("Failed to send verification email: " + e.getMessage());
+                        });
+
             } else {
                 setLoading(false);
                 showSnackbar("Registration failed: " + (task.getException() != null ? task.getException().getMessage() : ""));
@@ -228,6 +238,7 @@ public class RegisterActivity extends AppCompatActivity {
         userMap.put("email", email);
         userMap.put("accountType", accountType);
         userMap.put("uid", uid);
+        userMap.put("createdAt", System.currentTimeMillis()); // for auto-delete
 
         firestore.collection("users").document(uid)
                 .set(userMap)
@@ -236,8 +247,8 @@ public class RegisterActivity extends AppCompatActivity {
                             .set(Collections.singletonMap("uid", uid))
                             .addOnSuccessListener(aVoid2 -> {
                                 setLoading(false);
-                                showSnackbar("Registration successful!");
-                                redirectUser(accountType);
+                                showSnackbar("Registration successful... Please verify your email within 3 days!");
+                                redirectToVerification(accountType);
                             })
                             .addOnFailureListener(e -> {
                                 setLoading(false);
@@ -248,6 +259,13 @@ public class RegisterActivity extends AppCompatActivity {
                     setLoading(false);
                     showSnackbar("Failed to save user data: " + e.getMessage());
                 });
+    }
+
+    private void redirectToVerification(String accountType) {
+        Intent intent = new Intent(this, VerificationActivity.class);
+        intent.putExtra("accountType", accountType);
+        startActivity(intent);
+        finish();
     }
 
     private void showSnackbar(String message) {
@@ -266,13 +284,5 @@ public class RegisterActivity extends AppCompatActivity {
     private String getEditText(TextInputLayout layout) {
         TextInputEditText editText = (TextInputEditText) layout.getEditText();
         return (editText != null) ? Objects.requireNonNull(editText.getText()).toString().trim() : "";
-    }
-
-    private void redirectUser(String accountType) {
-        Intent intent = "owner".equalsIgnoreCase(accountType) ?
-                new Intent(this, OwnerDashboardActivity.class) :
-                new Intent(this, UserDashboardActivity.class);
-        startActivity(intent);
-        finish();
     }
 }
