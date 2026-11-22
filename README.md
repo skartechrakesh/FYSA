@@ -1,3 +1,5 @@
+![FYSA App Banner](docs/Feature_Graphic_Banner.png)
+
 # FYSA — Space Discovery & Booking Android Application
 
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white)
@@ -12,21 +14,21 @@
 ## Key Features
 
 ### 1. Space Discovery & Map Integration
-* **Dual-Map Support:** Browse and locate available spaces interactively using **Google Maps** and **OpenStreetMap (`osmdroid`)**.
-* **Search & Filtering:** Filter spaces by availability, location, category, and pricing.
-* **Detailed Space Listings:** View high-resolution space photos, amenities, location pins, and real-time availability status.
+- **Dual-Map Support:** Browse and locate available spaces interactively using **Google Maps** and **OpenStreetMap (`osmdroid`)**.
+- **Search & Filtering:** Filter spaces by availability, location, category, and pricing.
+- **Detailed Space Listings:** View high-resolution space photos, amenities, location pins, and real-time availability status.
 
 ### 2. Space Management (Host / Owner Tools)
-* **Create & Edit Listings:** Space owners can publish new spaces, upload images via **Firebase Storage**, and update pricing or availability on the fly.
-* **Booking Requests:** Manage incoming reservations, approve or decline requests, and track active bookings.
+- **Create & Edit Listings:** Space owners can publish new spaces, upload images via **Firebase Storage**, and update pricing or availability on the fly.
+- **Booking Requests:** Manage incoming reservations, approve or decline requests, and track active bookings.
 
 ### 3. Booking Dashboards & Analytics
-* **Interactive Visual Analytics:** Powered by **MPAndroidChart** to display booking trends, occupancy rates, and revenue/activity breakdowns.
-* **Booking History:** End-to-end tracking of upcoming, completed, and cancelled reservations.
+- **Interactive Visual Analytics:** Powered by **MPAndroidChart** to display booking trends, occupancy rates, and revenue/activity breakdowns.
+- **Booking History:** End-to-end tracking of upcoming, completed, and cancelled reservations.
 
 ### 4. Authentication & Cloud Sync
-* **Secure User Accounts:** Email/password and user session management powered by **Firebase Authentication**.
-* **Real-Time Database & Firestore:** Instant synchronization of space availability, user profiles, and booking states across **Cloud Firestore** and **Firebase Realtime Database**.
+- **Secure User Accounts:** Email/password and user session management powered by **Firebase Authentication**.
+- **Real-Time Database & Firestore:** Instant synchronization of space availability, user profiles, and booking states across **Cloud Firestore** and **Firebase Realtime Database**.
 
 ---
 
@@ -62,16 +64,17 @@ FYSA/
 │   └── build.gradle
 ├── build.gradle
 └── settings.gradle
+```
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-* **Android Studio** (Hedgehog / Iguana or newer recommended)
-* **JDK 17** (or compatible Android Gradle Plugin JDK)
-* A **Firebase Project** with Authentication, Firestore, Realtime Database, and Storage enabled
-* A **Google Maps API Key** (from Google Cloud Console)
+- **Android Studio** (Hedgehog / Iguana or newer recommended)
+- **JDK 17** (or compatible Android Gradle Plugin JDK)
+- A **Firebase Project** with Authentication, Firestore, Realtime Database, and Storage enabled
+- A **Google Maps API Key** (from Google Cloud Console)
 
 ### Installation & Setup
 
@@ -82,33 +85,25 @@ FYSA/
    ```
 
 2. **Configure Firebase:**
-   * Create a project in the [Firebase Console](https://console.firebase.google.com/).
-   * Register an Android app with package name `com.skar.fysa`.
-   * Download `google-services.json` and place it inside the `app/` directory:
+   - Create a project in the [Firebase Console](https://console.firebase.google.com/).
+   - Register an Android app with package name `com.skar.fysa`.
+   - Download `google-services.json` and place it inside the `app/` directory:
      ```text
      FYSA/app/google-services.json
      ```
 
 3. **Add Google Maps API Key:**
-   * Add your Google Maps API key to `local.properties` or `AndroidManifest.xml`:
+   - Add your Google Maps API key to `local.properties` or `AndroidManifest.xml`:
      ```properties
      MAPS_API_KEY=your_google_maps_api_key_here
      ```
 
 4. **Build & Run:**
-   * Open the project in Android Studio, allow Gradle to sync dependencies, and run on an emulator or physical Android device (API 24+).
-
----
-
-## Screenshots
-
-| Space Discovery | Map View | Analytics Dashboard |
-| :---: | :---: | :---: |
-| ![Discovery](docs/screenshots/discovery.png) | ![Map](docs/screenshots/map.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+   - Open the project in Android Studio, allow Gradle to sync dependencies, and run on an emulator or physical Android device (API 24+).
 
 ---
 
 ## Author
 
 **Rakesh Reddy** (`@skartechrakesh`)
-* GitHub: [github.com/skartechrakesh](https://github.com/skartechrakesh)
+- GitHub: [github.com/skartechrakesh](https://github.com/skartechrakesh)
